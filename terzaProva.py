@@ -23,15 +23,17 @@ def exit(update: Update, context: CallbackContext):
     updater.stop()
 
 def buttonsInLinea(update: Update, context: CallbackContext):
-    options = []
-    options.append(InlineKeyboardButton(text='scelta 1', callback_data='1'))
-    options.append(InlineKeyboardButton(text='scelta 2', callback_data='2'))
-    options.append(InlineKeyboardButton(text='scelta 3', callback_data='3'))
-    options.append(InlineKeyboardButton(text='scelta 4', callback_data='4'))
-    reply_markup = InlineKeyboardMarkup([options])
-    context.bot.send_message(chat_id=update.effective_chat.id, text='Clicca una delle scelte', reply_markup=reply_markup)
-    context.bot.send_message(chat_id=update.effective_chat.id, text=f"hai scelto l'opzione numero{update.callback_query.data}")
-    
+    keyboard = [
+        [
+            InlineKeyboardButton("Option 1", callback_data='1'),
+            InlineKeyboardButton("Option 2", callback_data='2'),
+        ],
+        [InlineKeyboardButton("Option 3", callback_data='3')],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Please choose:', reply_markup=reply_markup)
+    query = update.callback_query
+    query.edit_message_text(text=f"Selected option: {query.data}")
 
 def unknown(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=update.effective_chat.id, text="Non c'è alcun comando scritto così")

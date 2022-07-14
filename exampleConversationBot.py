@@ -1,6 +1,10 @@
+#!/usr/bin/env python
+# pylint: disable=unused-argument, wrong-import-position
+# This program is dedicated to the public domain under the CC0 license.
+
 """
 First, a few callback functions are defined. Then, those functions are passed to
-the updater and registered at their respective places.
+the Application and registered at their respective places.
 Then, the bot is started and runs until we press Ctrl-C on the command line.
 Usage:
 Example of a bot-user conversation using ConversationHandler.
@@ -19,7 +23,7 @@ try:
 except ImportError:
     __version_info__ = (0, 0, 0, 0, 0)  # type: ignore[assignment]
 
-if __version_info__ < (20, 0, 0, "a", 1):
+if __version_info__ < (20, 0, 0, "alpha", 1):
     raise RuntimeError(
         f"This example is not compatible with your current PTB version {TG_VER}. To view the "
         f"{TG_VER} version of this example, "
@@ -27,7 +31,7 @@ if __version_info__ < (20, 0, 0, "a", 1):
     )
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
-    updater,
+    Application,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
@@ -121,8 +125,8 @@ async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 def main() -> None:
     """Run the bot."""
-    # Create the updater and pass it your bot's token.
-    updater = updater.builder().token("5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token("5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
 
     # Add conversation handler with the states CHOOSING, TYPING_CHOICE and TYPING_REPLY
     conv_handler = ConversationHandler(
@@ -149,10 +153,10 @@ def main() -> None:
         fallbacks=[MessageHandler(filters.Regex("^Done$"), done)],
     )
 
-    updater.add_handler(conv_handler)
+    application.add_handler(conv_handler)
 
     # Run the bot until the user presses Ctrl-C
-    updater.run_polling()
+    application.run_polling()
 
 
 if __name__ == "__main__":
