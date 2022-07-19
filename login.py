@@ -7,44 +7,53 @@ from telegram.ext import CallbackContext, CommandHandler, Updater, MessageHandle
 # first initialization
 application = Application.builder().token("5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
 """updater = Updater(token="5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0", use_context=True)"""
+# creazione del logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
+logger = logging.getLogger(__name__)
 # app func
 LOGIN, LOGIN_CHECK, MENU=range(3)
-
-# connessione al database
-myconn= mc.connect(host="localhost",user = "root", passwd="",database="tg_bot")
+#__myconn= mc.connect(host="localhost",user = "root", passwd="",database="tg_bot")
 
 # func handler
 async def start(update: Update, context: CallbackContext):
+    logger.info("Utente \'%s\' ha avviato la conversazione %s.",update.message.from_user.username, update.message.chat_id)
     # inserire logging start
     await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
     
 async def login(update: Update, context:CallbackContext):
-    # verifica whitelist da db
-    cur=myconn.cursor() 
-    cur.execute("select * from whitelist")
-    whitelist=[i[0] for i in cur.fetchall()]
-    cur.close()
+    # connessione al database
+    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot") as __myconn:
+        # verifica whitelist da db
+        cur=__myconn.cursor() 
+        cur.execute("select * from whitelist")
+        whitelist=[i[0] for i in cur.fetchall()]
+        cur.close()
 
-
+    print(whitelist)
     # inserire logging login
     if update.message.from_user.username not in whitelist:
+        logger.info("Utente \'%s\' sta cercando di effettuare il log in.", update.message.from_user.username)
         await update.message.reply_text(
             "inserisci la password d'accesso: ")
         return LOGIN_CHECK
     else:
+        logger.info("Utente \'%s\' è gia registrato. Ha effettuato il log in.", update.message.from_user.username)
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "Sei già loggato nel sistema, accedi al menù!")
         return ConversationHandler.END
 
 async def login_check(update: Update, context:CallbackContext):
+    # connessione al database
 
     if update.message.text=="fromfarmtofork":
-        # insert username nella whitelist del db
-        cur=myconn.cursor()
-        cur.execute(f"INSERT INTO `whitelist` (`username`) VALUES ('{update.message.from_user.username}')")
-        cur.close()
+        logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", update.message.from_user.username)
+        with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot") as __myconn:
+            # insert username nella whitelist del db
+            cur=__myconn.cursor()
+            cur.execute(f"INSERT INTO `whitelist` (`username`) VALUES ('{update.message.from_user.username}')")
+            __myconn.commit()
+            cur.close()
 
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "Password corretta!\n ora puoi accedere alle funzioni del bot!")
@@ -52,6 +61,7 @@ async def login_check(update: Update, context:CallbackContext):
         "il menù rimane da aggiungere")
         return ConversationHandler.END
     else:
+        logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", update.message.from_user.username,update.message.text)
         await update.message.reply_text(
         "riprova a inserire la password:")
         return LOGIN_CHECK
@@ -62,7 +72,7 @@ async def menu(update: Update, context:CallbackContext):
 
 
 async def cancel(update: Update, context: CallbackContext) -> int:
-    # inserire logging cancel
+    logger.info("L'utente \'%s\' ha cancellato il log in.",update.message.from_user.username)
     await update.message.reply_text(
         "Ritorni alla schermata iniziale!")
     return ConversationHandler.END
