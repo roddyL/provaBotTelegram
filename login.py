@@ -1,7 +1,7 @@
 import pymysql as mc
 import logging
 from warnings import filters
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
 from telegram.ext import CallbackContext, CommandHandler, Updater, MessageHandler, filters, TypeHandler, ConversationHandler, Application
 
 # first initialization
@@ -43,10 +43,15 @@ async def login(update: Update, context:CallbackContext):
         return ConversationHandler.END
 
 async def login_check(update: Update, context:CallbackContext):
-    # connessione al database
-
-    if update.message.text=="fromfarmtofork":
+    # cancellazione messaggi
+    passInserita=update.message.text
+    messageId=update.message.message_id
+    await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId)
+    await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
+    
+    if passInserita=="fromfarmtofork":
         logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", update.message.from_user.username)
+        # connessione al database
         with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot") as __myconn:
             # insert username nella whitelist del db
             cur=__myconn.cursor()
@@ -60,7 +65,7 @@ async def login_check(update: Update, context:CallbackContext):
         "il menù rimane da aggiungere")
         return ConversationHandler.END
     else:
-        logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", update.message.from_user.username,update.message.text)
+        logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", update.message.from_user.username, passInserita)
         await update.message.reply_text(
         "riprova a inserire la password:")
         return LOGIN_CHECK
