@@ -13,7 +13,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 # app func
 LOGIN, LOGIN_CHECK, MENU=range(3)
-#__myconn= mc.connect(host="localhost",user = "root", passwd="",database="tg_bot")
 
 # func handler
 async def start(update: Update, context: CallbackContext):
@@ -24,19 +23,19 @@ async def start(update: Update, context: CallbackContext):
 async def login(update: Update, context:CallbackContext):
     # connessione al database
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot") as __myconn:
-        # verifica whitelist da db
+        # update whitelist da database
         cur=__myconn.cursor() 
         cur.execute("select * from whitelist")
         whitelist=[i[0] for i in cur.fetchall()]
         cur.close()
 
-    print(whitelist)
-    # inserire logging login
+    # se è un utente nuovo fa la registrazione
     if update.message.from_user.username not in whitelist:
         logger.info("Utente \'%s\' sta cercando di effettuare il log in.", update.message.from_user.username)
         await update.message.reply_text(
             "inserisci la password d'accesso: ")
         return LOGIN_CHECK
+    # altrimenti rimanda al menù
     else:
         logger.info("Utente \'%s\' è gia registrato. Ha effettuato il log in.", update.message.from_user.username)
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
