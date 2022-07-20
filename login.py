@@ -2,7 +2,7 @@ import pymysql as mc
 import logging
 from warnings import filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
-from telegram.ext import CallbackContext, CommandHandler, Updater, MessageHandler, filters, TypeHandler, ConversationHandler, Application
+from telegram.ext import CallbackContext, CommandHandler, Updater, MessageHandler, filters, TypeHandler, ConversationHandler, Application, CallbackQueryHandler
 
 # first initialization
 application = Application.builder().token("5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
@@ -12,7 +12,49 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 # app func
-LOGIN, LOGIN_CHECK, MENU=range(3)
+LOGIN, LOGIN_CHECK, MENU, BUTTON=range(4)
+
+# funzioni
+
+def check_whitelist():
+    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+        # update whitelist da database
+        cur=__myconn.cursor() 
+        cur.execute("select * from whitelist where is_logged=1")
+        whitelist=[i["username"] for i in cur.fetchall()]
+        cur.close()
+    return whitelist
+
+def menu_interface_main(input=None):
+    keyboard = [
+            [
+                InlineKeyboardButton("Option 1", callback_data='m1_1'),
+                InlineKeyboardButton("Option 2", callback_data='m1_2'),
+            ],
+            [   InlineKeyboardButton("Option 3", callback_data='m1_3')
+            ],
+        ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    text_reply=f""
+    return text_reply,reply_markup
+
+def menu_interface_m1_1(input):
+    keyboard = [
+            [
+                InlineKeyboardButton("Scelta 1 ", callback_data='m2_1'),
+                InlineKeyboardButton("Scelta 2", callback_data='m2_2'),
+            ],
+            [   InlineKeyboardButton("Scelta 3", callback_data='m2_3')
+            ],
+        ]
+    reply_markup=InlineKeyboardMarkup(keyboard)
+    text_reply=f"Hai scelto: {input} ora scegli ancora: "
+    return text_reply, reply_markup
+
+def menu_interface_m2_1(input):
+    reply_markup=None
+    text_reply=f"Hai scelto: {input} ora basta, hai finito girare"
+    return text_reply, reply_markup
 
 # func handler
 async def start(update: Update, context: CallbackContext):
@@ -21,16 +63,8 @@ async def start(update: Update, context: CallbackContext):
     await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
     
 async def login(update: Update, context:CallbackContext):
-    # connessione al database
-    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot") as __myconn:
-        # update whitelist da database
-        cur=__myconn.cursor() 
-        cur.execute("select * from whitelist")
-        whitelist=[i[0] for i in cur.fetchall()]
-        cur.close()
-
     # se è un utente nuovo fa la registrazione
-    if update.message.from_user.username not in whitelist:
+    if update.message.from_user.username not in check_whitelist():
         logger.info("Utente \'%s\' sta cercando di effettuare il log in.", update.message.from_user.username)
         await update.message.reply_text(
             "inserisci la password d'accesso: ")
@@ -39,15 +73,15 @@ async def login(update: Update, context:CallbackContext):
     else:
         logger.info("Utente \'%s\' è gia registrato. Ha effettuato il log in.", update.message.from_user.username)
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
-            "Sei già loggato nel sistema, accedi al menù!")
-        return ConversationHandler.END
+            "Sei già loggato nel sistema, accedi al menù con /menu!")
+        return MENU
 
 async def login_check(update: Update, context:CallbackContext):
     # cancellazione messaggi
     passInserita=update.message.text
     messageId=update.message.message_id
     await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId)
-    await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
+    # await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
     
     if passInserita=="fromfarmtofork":
         logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", update.message.from_user.username)
@@ -60,10 +94,8 @@ async def login_check(update: Update, context:CallbackContext):
             cur.close()
 
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
-            "Password corretta!\n ora puoi accedere alle funzioni del bot!")
-        await context.bot.send_message(chat_id=update.effective_chat.id,text=
-        "il menù rimane da aggiungere")
-        return ConversationHandler.END
+            "Password corretta!\n ora puoi accedere alle funzioni del bot!\nDigita il comando /menu per accedere al menu")
+        return MENU
     else:
         logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", update.message.from_user.username, passInserita)
         await update.message.reply_text(
@@ -71,8 +103,28 @@ async def login_check(update: Update, context:CallbackContext):
         return LOGIN_CHECK
 
 async def menu(update: Update, context:CallbackContext):
-    # inserire logging menu
-    return 
+    # se è un utente nuovo fa la registrazione
+    if update.message.from_user.username not in check_whitelist():
+        await context.bot.send_message(chat_id=update.effective_chat.id,text=
+            "La sessione è scaduta, ripassa per il /login !")
+        return ConversationHandler.END
+    else:
+        interfaccia=menu_interface_main()
+        await update.message.reply_text('Please choose:', reply_markup=interfaccia[1])
+        return BUTTON
+
+async def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    await query.answer()
+    if query.data=='m1_1':
+        m1_1_interface=menu_interface_m1_1(query.data)
+        await query.edit_message_text(text=m1_1_interface[0],reply_markup=m1_1_interface[1])
+        return BUTTON
+    elif query.data=='m2_1':
+        m2_1_interface=menu_interface_m2_1(query.data)
+        await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
+        return MENU
+    return MENU
 
 
 async def cancel(update: Update, context: CallbackContext) -> int:
@@ -89,14 +141,17 @@ def main():
         entry_points=[CommandHandler("login", login)],
         states={
             LOGIN_CHECK: [MessageHandler(filters.TEXT,login_check)],
-            MENU: [MessageHandler(filters.TEXT,menu)]
+            MENU: [CommandHandler("menu", menu)],
+            BUTTON: [CallbackQueryHandler(button)],
         },
         fallbacks=[CommandHandler("cancel", cancel)]
     )
+    # button_handler=CallbackQueryHandler(button)
 
     # dispatcher add handler
     application.add_handler(start_handler)
     application.add_handler(login_conv_handler)
+    # application.add_handler(button_handler)
 
     # start
     application.run_polling(close_loop=True)
