@@ -1,20 +1,35 @@
 import pymysql as mc
 import logging
+from typing import Union, List
 from warnings import filters
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext, CommandHandler, Updater, MessageHandler, filters, TypeHandler, ConversationHandler, Application, CallbackQueryHandler
 
 # first initialization
 application = Application.builder().token("5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
-"""updater = Updater(token="5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0", use_context=True)"""
+
 # creazione del logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
-# app func
+
+# variabili conversation handler
 LOGIN, LOGIN_CHECK, MENU, BUTTON=range(4)
 
 # funzioni
+
+def build_menu(
+    buttons: List[InlineKeyboardButton],
+    n_cols: int,
+    header_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None,
+    footer_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None
+) -> List[List[InlineKeyboardButton]]:
+    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
+    if header_buttons:
+        menu.insert(0, header_buttons if isinstance(header_buttons, list) else [header_buttons])
+    if footer_buttons:
+        menu.append(footer_buttons if isinstance(footer_buttons, list) else [footer_buttons])
+    return menu
 
 def check_whitelist():
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
@@ -27,27 +42,21 @@ def check_whitelist():
 
 def menu_interface_main(input=None):
     keyboard = [
-            [
-                InlineKeyboardButton("Option 1", callback_data='m1_1'),
-                InlineKeyboardButton("Option 2", callback_data='m1_2'),
-            ],
-            [   InlineKeyboardButton("Option 3", callback_data='m1_3')
-            ],
+                InlineKeyboardButton("prenotazioni 📅", callback_data='m1_1'),
+                InlineKeyboardButton("", callback_data='m1_2'),
+                InlineKeyboardButton("Option 3", callback_data='m1_3')
         ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard,n_cols=3))
     text_reply=f""
     return text_reply,reply_markup
 
 def menu_interface_m1_1(input):
     keyboard = [
-            [
-                InlineKeyboardButton("Scelta 1 ", callback_data='m2_1'),
-                InlineKeyboardButton("Scelta 2", callback_data='m2_2'),
-            ],
-            [   InlineKeyboardButton("Scelta 3", callback_data='m2_3')
-            ],
+                InlineKeyboardButton("nuova prenotazione", callback_data='m2_1'),
+                InlineKeyboardButton("cancella prenotazione", callback_data='m2_2'),
+                InlineKeyboardButton("le mie prenotazioni", callback_data='m2_3')
         ]
-    reply_markup=InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard,n_cols=3))
     text_reply=f"Hai scelto: {input} ora scegli ancora: "
     return text_reply, reply_markup
 
