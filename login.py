@@ -31,14 +31,36 @@ def build_menu(
         menu.append(footer_buttons if isinstance(footer_buttons, list) else [footer_buttons])
     return menu
 
-def check_whitelist():
+def insert_whitelist(username):
+    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"INSERT INTO `whitelist` (`username`,`dt_lastLogin`) VALUES ('{username}',CURRENT_TIMESTAMP)")
+            __myconn.commit()
+
+def check_whitelist(already_logged=False):
+    if already_logged:
+        logged=0
+    else:
+        logged=1
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         # update whitelist da database
-        cur=__myconn.cursor() 
-        cur.execute("select * from whitelist where is_logged=1")
-        whitelist=[i["username"] for i in cur.fetchall()]
-        cur.close()
+        with __myconn.cursor() as cur: 
+            cur.execute(f"select * from whitelist where is_logged={logged}")
+            whitelist=[i["username"] for i in cur.fetchall()]
+
     return whitelist
+
+def update_session(username):
+    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE username='{username}'")
+            __myconn.commit()
+
+def logout(username):
+    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"UPDATE `whitelist` SET is_logged=0 WHERE username='{username}'")
+            __myconn.commit()
 
 def menu_interface_main(input=None):
     keyboard = [
@@ -86,60 +108,77 @@ async def login(update: Update, context:CallbackContext):
         return MENU
 
 async def login_check(update: Update, context:CallbackContext):
-    # cancellazione messaggi
+    username=update.message.from_user.username
     passInserita=update.message.text
     messageId=update.message.message_id
+    # cancellazione messaggi
     await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId)
     # await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
     
     if passInserita=="fromfarmtofork":
-        logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", update.message.from_user.username)
-        # connessione al database
-        with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot") as __myconn:
-            # insert username nella whitelist del db
-            cur=__myconn.cursor()
-            cur.execute(f"INSERT INTO `whitelist` (`username`) VALUES ('{update.message.from_user.username}')")
-            __myconn.commit()
-            cur.close()
-
+        if username not in check_whitelist(True) and username not in check_whitelist():
+            logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", username)
+            insert_whitelist(username)
+        else:
+            update_session(username)
+            logger.info("Log in dell'utente \'%s\' riuscito. Update della sessione.", username)
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "Password corretta!\n ora puoi accedere alle funzioni del bot!\nDigita il comando /menu per accedere al menu")
         return MENU
     else:
-        logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", update.message.from_user.username, passInserita)
+        logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", username, passInserita)
         await update.message.reply_text(
         "riprova a inserire la password:")
         return LOGIN_CHECK
 
 async def menu(update: Update, context:CallbackContext):
+    username=update.message.from_user.username
+    
     # se è un utente nuovo fa la registrazione
-    if update.message.from_user.username not in check_whitelist():
+    if username not in check_whitelist():
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "La sessione è scaduta, ripassa per il /login !")
         return ConversationHandler.END
     else:
+        update_session(username)
         interfaccia=menu_interface_main()
         await update.message.reply_text('Please choose:', reply_markup=interfaccia[1])
         return BUTTON
 
 async def button(update: Update, context: CallbackContext) -> None:
-    query = update.callback_query
-    await query.answer()
-    if query.data=='m1_1':
-        m1_1_interface=menu_interface_m1_1(query.data)
-        await query.edit_message_text(text=m1_1_interface[0],reply_markup=m1_1_interface[1])
-        return BUTTON
-    elif query.data=='m2_1':
-        m2_1_interface=menu_interface_m2_1(query.data)
-        await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
+    username=update.callback_query.from_user.username
+    
+    if username not in check_whitelist():
+        await context.bot.send_message(chat_id=update.effective_chat.id,text=
+            "La sessione è scaduta, ripassa per il /login !")
+        return ConversationHandler.END
+    else:
+        update_session(username)
+        query = update.callback_query
+        await query.answer()
+        if query.data=='m1_1':
+            m1_1_interface=menu_interface_m1_1(query.data)
+            await query.edit_message_text(text=m1_1_interface[0],reply_markup=m1_1_interface[1])
+            return BUTTON
+        elif query.data=='m2_1':
+            m2_1_interface=menu_interface_m2_1(query.data)
+            await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
+            return MENU
         return MENU
-    return MENU
 
 
-async def cancel(update: Update, context: CallbackContext) -> int:
-    logger.info("L'utente \'%s\' ha cancellato il log in.",update.message.from_user.username)
-    await update.message.reply_text(
-        "Ritorni alla schermata iniziale!")
+async def fallback(update: Update, context: CallbackContext) -> int:
+    username=update.message.from_user.username
+    if update.message.text=="/cancel":
+        logger.info("L'utente \'%s\' ha cancellato il log in.",username)
+        await update.message.reply_text(
+            "Ritorni alla schermata iniziale!")
+    else:
+        logout(username)
+        logger.info("L'utente \'%s\' ha effettuato il logout.",username)
+        await update.message.reply_text(
+            "Logout effettuato!")
+
     return ConversationHandler.END
 
 # main
@@ -153,14 +192,13 @@ def main():
             MENU: [CommandHandler("menu", menu)],
             BUTTON: [CallbackQueryHandler(button)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)]
+        fallbacks=[CommandHandler(["cancel","logout"], fallback)]
     )
-    # button_handler=CallbackQueryHandler(button)
 
     # dispatcher add handler
     application.add_handler(start_handler)
     application.add_handler(login_conv_handler)
-    # application.add_handler(button_handler)
+
 
     # start
     application.run_polling(close_loop=True)
