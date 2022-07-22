@@ -89,11 +89,17 @@ def menu_interface_m2_1(input):
 
 # func handler
 async def start(update: Update, context: CallbackContext):
-    logger.info("Utente \'%s\' ha avviato la conversazione %s.",update.message.from_user.username, update.message.chat_id)
-    # inserire logging start
-    await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
+    if  "in_conversation" in context.user_data.keys():
+        if context.user_data['in_conversation'] == True:
+            await update.message.reply_text("Ehi! sei ancora loggato, se vuoi riavviare il bot effettua prima il /logout! o per un semplice riavvio scrivi /cancel !")
+            return
     
+    logger.info("Utente \'%s\' ha avviato la conversazione %s.",update.message.from_user.username, update.message.chat_id)
+    await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
+
 async def login(update: Update, context:CallbackContext):
+    context.user_data['in_conversation'] = True
+
     # se è un utente nuovo fa la registrazione
     if update.message.from_user.username not in check_whitelist():
         logger.info("Utente \'%s\' sta cercando di effettuare il log in.", update.message.from_user.username)
@@ -112,6 +118,7 @@ async def login_check(update: Update, context:CallbackContext):
     passInserita=update.message.text
     messageId=update.message.message_id
     # cancellazione messaggi
+    
     await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId)
     # await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
     
@@ -138,6 +145,7 @@ async def menu(update: Update, context:CallbackContext):
     if username not in check_whitelist():
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "La sessione è scaduta, ripassa per il /login !")
+        context.user_data['in_conversation'] = False
         return ConversationHandler.END
     else:
         update_session(username)
@@ -151,6 +159,7 @@ async def button(update: Update, context: CallbackContext) -> None:
     if username not in check_whitelist():
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "La sessione è scaduta, ripassa per il /login !")
+        context.user_data['in_conversation'] = False
         return ConversationHandler.END
     else:
         update_session(username)
@@ -170,15 +179,22 @@ async def button(update: Update, context: CallbackContext) -> None:
 async def fallback(update: Update, context: CallbackContext) -> int:
     username=update.message.from_user.username
     if update.message.text=="/cancel":
-        logger.info("L'utente \'%s\' ha cancellato il log in.",username)
-        await update.message.reply_text(
-            "Ritorni alla schermata iniziale!")
+        if username in check_whitelist():
+            logger.info("L'utente \'%s\' ha provato a cancellare il login ma risulta loggato.",username)
+            await update.message.reply_text(
+                "Sei loggato, non puoi effettuare questo comando. In questo caso devi effettuare il comando /logout!")
+            return 
+        else:
+            logger.info("L'utente \'%s\' ha cancellato il log in.",username)
+            await update.message.reply_text(
+                "Ritorni alla schermata iniziale!")
     else:
         logout(username)
         logger.info("L'utente \'%s\' ha effettuato il logout.",username)
         await update.message.reply_text(
             "Logout effettuato!")
 
+    context.user_data['in_conversation'] = False
     return ConversationHandler.END
 
 # main
