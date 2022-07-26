@@ -99,27 +99,31 @@ async def start(update: Update, context: CallbackContext):
 
 async def login(update: Update, context:CallbackContext):
     context.user_data['in_conversation'] = True
-
+    username=update.message.from_user.username
+    
     # se è un utente nuovo fa la registrazione
-    if update.message.from_user.username not in check_whitelist():
-        logger.info("Utente \'%s\' sta cercando di effettuare il log in.", update.message.from_user.username)
+    if username not in check_whitelist():
+        logger.info("Utente \'%s\' sta cercando di effettuare il log in.", username)
         await update.message.reply_text(
             "inserisci la password d'accesso: ")
         return LOGIN_CHECK
     # altrimenti rimanda al menù
     else:
-        logger.info("Utente \'%s\' è gia registrato. Ha effettuato il log in.", update.message.from_user.username)
+        logger.info("Utente \'%s\' è gia registrato. Ha effettuato il log in.", username)
         await context.bot.send_message(chat_id=update.effective_chat.id,text=
             "Sei già loggato nel sistema, accedi al menù con /menu!")
         return MENU
 
 async def login_check(update: Update, context:CallbackContext):
+    
     username=update.message.from_user.username
     passInserita=update.message.text
     messageId=update.message.message_id
+    chatId=update.message.chat_id
+
     # cancellazione messaggi
-    
-    await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId)
+
+    await application.bot.delete_message(chat_id=chatId, message_id=messageId)
     # await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
     
     if passInserita=="fromfarmtofork":
@@ -129,13 +133,14 @@ async def login_check(update: Update, context:CallbackContext):
         else:
             update_session(username)
             logger.info("Log in dell'utente \'%s\' riuscito. Update della sessione.", username)
-        await context.bot.send_message(chat_id=update.effective_chat.id,text=
+        await context.bot.send_message(chat_id=chatId,text=
             "Password corretta!\n ora puoi accedere alle funzioni del bot!\nDigita il comando /menu per accedere al menu")
         return MENU
     else:
         logger.info("Log in dell'utente \'%s\' non riuscito. Password usata: %s", username, passInserita)
-        await update.message.reply_text(
-        "riprova a inserire la password:")
+        # await application.bot.edit_message_text(chat_id=chatId, message_id=update.message.message_id-2, text="riprova a inserire la password:")
+        # await update.message.reply_text(
+        # "riprova a inserire la password:")
         return LOGIN_CHECK
 
 async def menu(update: Update, context:CallbackContext):
@@ -177,6 +182,17 @@ async def button(update: Update, context: CallbackContext) -> None:
 
 
 async def fallback(update: Update, context: CallbackContext) -> int:
+    """_summary_
+
+    ATTENZIONE -- /CANCEL NON FUNZIONA QUANDO VIENE INVOCATO NEL LOGIN
+
+    Args:
+        update (Update): _description_
+        context (CallbackContext): _description_
+
+    Returns:
+        int: _description_
+    """
     username=update.message.from_user.username
     if update.message.text=="/cancel":
         if username in check_whitelist():
@@ -214,7 +230,6 @@ def main():
     # dispatcher add handler
     application.add_handler(start_handler)
     application.add_handler(login_conv_handler)
-
 
     # start
     application.run_polling(close_loop=True)
