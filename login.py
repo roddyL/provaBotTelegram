@@ -1,9 +1,12 @@
 import pymysql as mc
 import logging
+import datetime
+import calendar
+from holidays import italy as italianHolidays
 from typing import Union, List
 from warnings import filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackContext, CommandHandler, Updater, MessageHandler, filters, TypeHandler, ConversationHandler, Application, CallbackQueryHandler
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, filters, ConversationHandler, Application, CallbackQueryHandler
 
 # first initialization
 application = Application.builder().token("5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
@@ -13,10 +16,81 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# variabili globali
+month_enToIt={"January":"Gennaio","February":"Febbraio","March":"Marzo","April":"Aprile",
+                "May":"Maggio","June":"Giugno","July":"Luglio","August":"Agosto","September":"Settembre",
+                "October":"Ottobre","November":"Novembre","December":"Dicembre"}
+
+
+
 # variabili conversation handler
 LOGIN, LOGIN_CHECK, MENU, BUTTON=range(4)
 
 # funzioni
+
+def giorni_festivi(year: int=datetime.date.today().year, provincia: str="PD") ->List[datetime.date]:
+    """_summary_
+
+    Args:
+        year (int): _description_
+        provincia (str):  
+
+    Returns:
+        List[datetime.date]: lista di giorni di ferie
+    """
+    festivi=[]
+    for i, j in sorted(italianHolidays.Italy(subdiv=provincia,years=year).items()):
+        if datetime.date.weekday(i)!=6:
+            festivi.append(i)
+
+    return festivi
+
+def giorni_occupati():
+    """comprende le ferie
+    """
+    pass
+
+def strike(text):
+    result = ''
+    for c in text:
+        result += c + '\u0336'
+    return result
+
+def italics(text):
+    result = ''
+    for c in text:
+        result+= '\x1B[3m' + c 
+    return result
+
+def bold(text):
+    result = ''
+    for c in text:
+        result += '\033[1m' + c 
+    return result
+
+def dayInfo(
+            day: datetime.date=datetime.date.today(),
+            holidays: List[datetime.date]=giorni_festivi()
+            )-> dict:
+    if not isinstance(day, datetime.date):
+        raise TypeError
+
+    query_uffici_pieni=""
+    giorni_uffici_pieni=[]
+
+    giorni=[]
+    occupati=[]
+    for i in calendar.monthcalendar(day.year,day.month):
+        for j in i:
+            if j==0:
+                giorni.append(" ")
+            elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or j<=day.day:
+                occupati.append(j)
+                giorni.append(f"{j}❌")
+            else:
+                giorni.append(f"{j}🟩")
+                
+    return {"giorno": day.day, "mese": month_enToIt[calendar.month_name[day.month]], "anno": day.year, "lista_giorni": giorni, "lista_occupati": occupati, "datetime": day}
 
 def build_menu(
     buttons: List[InlineKeyboardButton],
@@ -86,6 +160,32 @@ def menu_interface_m2_1(input):
     reply_markup=None
     text_reply=f"Hai scelto: {input} ora basta, hai finito girare"
     return text_reply, reply_markup
+
+def calendar_interface(
+    busy_days: List[datetime.date]=None
+):
+    theDay=dayInfo()
+    mese=theDay["mese"]
+    anno=theDay["anno"]
+    giorno_datetime=theDay["datetime"]
+
+    days=[InlineKeyboardButton(i, callback_data="bellezza") for i in ["Lu","Ma","Me","Gi","Ve","Sa","Do"]]
+    keyboard = [
+        InlineKeyboardButton(i,callback_data=i) for i in theDay["lista_giorni"]
+        ]
+    days+=keyboard
+    keyboard=days
+
+    header=[InlineKeyboardButton(f"{mese} {anno}", callback_data="bellezza")]
+    if giorno_datetime.month==datetime.date.today().month:
+        footers=[]
+    else:
+        footers=[InlineKeyboardButton("indietro",callback_data="back")]
+
+    footers.append(InlineKeyboardButton("avanti",callback_data="next"))
+
+    reply_markup=InlineKeyboardMarkup(build_menu(keyboard,n_cols=7, header_buttons= header, footer_buttons=footers))
+    return reply_markup
 
 # func handler
 async def start(update: Update, context: CallbackContext):
@@ -175,24 +275,15 @@ async def button(update: Update, context: CallbackContext) -> None:
             await query.edit_message_text(text=m1_1_interface[0],reply_markup=m1_1_interface[1])
             return BUTTON
         elif query.data=='m2_1':
-            m2_1_interface=menu_interface_m2_1(query.data)
-            await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
+            # m2_1_interface=menu_interface_m2_1(query.data)
+            interface_calendar=calendar_interface()
+            # await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
+            await query.edit_message_text(text="seleziona data",reply_markup=interface_calendar)
             return MENU
         return MENU
 
 
 async def fallback(update: Update, context: CallbackContext) -> int:
-    """_summary_
-
-    ATTENZIONE -- /CANCEL NON FUNZIONA QUANDO VIENE INVOCATO NEL LOGIN
-
-    Args:
-        update (Update): _description_
-        context (CallbackContext): _description_
-
-    Returns:
-        int: _description_
-    """
     username=update.message.from_user.username
     if update.message.text=="/cancel":
         if username in check_whitelist():
