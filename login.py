@@ -50,6 +50,28 @@ def giorni_occupati():
     """
     pass
 
+def next_month(
+    mese: int,
+    anno: int
+) -> str:
+    if mese==12:
+        prossimoMese=f"01/01/{anno+1}"
+    else:
+        prossimoMese=f"01/{mese+1}/{anno}"
+
+    return prossimoMese
+
+def previous_month(
+    mese: int,
+    anno: int
+) -> str:
+    if mese==1:
+        mesePrecedente=f"01/12/{anno-1}"
+    else:
+        mesePrecedente=f"01/{mese-1}/{anno}"
+
+    return mesePrecedente
+
 def strike(text):
     result = ''
     for c in text:
@@ -69,7 +91,7 @@ def bold(text):
     return result
 
 def dayInfo(
-            day: datetime.date=datetime.date.today(),
+            day: datetime.date,
             holidays: List[datetime.date]=giorni_festivi()
             )-> dict:
     if not isinstance(day, datetime.date):
@@ -84,7 +106,7 @@ def dayInfo(
         for j in i:
             if j==0:
                 giorni.append(" ")
-            elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or j<=day.day:
+            elif datetime.date(datetime.date.today().year, datetime.date.today().month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or (day.year==datetime.date.today().year and day.month==datetime.date.today().month and j<=datetime.date.today().day):
                 occupati.append(j)
                 giorni.append(f"{j}❌")
             else:
@@ -162,27 +184,34 @@ def menu_interface_m2_1(input):
     return text_reply, reply_markup
 
 def calendar_interface(
-    busy_days: List[datetime.date]=None
+    firstDayMonth: datetime.date=None,
+    busy_days: List[datetime.date]=None,
 ):
-    theDay=dayInfo()
+    theDay=dayInfo(firstDayMonth)
     mese=theDay["mese"]
     anno=theDay["anno"]
     giorno_datetime=theDay["datetime"]
+    lista_giorni=theDay["lista_giorni"]
+    lista_giorni_occupati=theDay["lista_occupati"]
 
-    days=[InlineKeyboardButton(i, callback_data="bellezza") for i in ["Lu","Ma","Me","Gi","Ve","Sa","Do"]]
-    keyboard = [
-        InlineKeyboardButton(i,callback_data=i) for i in theDay["lista_giorni"]
-        ]
+    days=[InlineKeyboardButton(i, callback_data="fashion") for i in ["Lu","Ma","Me","Gi","Ve","Sa","Do"]]
+    keyboard=[]
+    for i in lista_giorni:
+        if i in lista_giorni_occupati or i==" ":
+            keyboard.append(InlineKeyboardButton(i,callback_data="fashion"))
+        else:
+            keyboard.append(InlineKeyboardButton(i,callback_data=f"{int(i[:-1])}/{giorno_datetime.month}/{giorno_datetime.year}"))
+
     days+=keyboard
     keyboard=days
 
-    header=[InlineKeyboardButton(f"{mese} {anno}", callback_data="bellezza")]
+    header=[InlineKeyboardButton(f"{mese} {anno}", callback_data="fashion")]
     if giorno_datetime.month==datetime.date.today().month:
         footers=[]
     else:
-        footers=[InlineKeyboardButton("indietro",callback_data="back")]
+        footers=[InlineKeyboardButton("indietro",callback_data=f"chMonth_{previous_month(giorno_datetime.month, giorno_datetime.year)}")]
 
-    footers.append(InlineKeyboardButton("avanti",callback_data="next"))
+    footers.append(InlineKeyboardButton("avanti",callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
 
     reply_markup=InlineKeyboardMarkup(build_menu(keyboard,n_cols=7, header_buttons= header, footer_buttons=footers))
     return reply_markup
@@ -269,18 +298,32 @@ async def button(update: Update, context: CallbackContext) -> None:
     else:
         update_session(username)
         query = update.callback_query
-        await query.answer()
+        print(f"conferma callback_query: {await query.answer()} query.data:{query.data}")
+        
         if query.data=='m1_1':
             m1_1_interface=menu_interface_m1_1(query.data)
             await query.edit_message_text(text=m1_1_interface[0],reply_markup=m1_1_interface[1])
             return BUTTON
-        elif query.data=='m2_1':
+        elif query.data=='m2_1' or query.data[:7]=="chMonth":
             # m2_1_interface=menu_interface_m2_1(query.data)
-            interface_calendar=calendar_interface()
+            if query.data[:7]=="chMonth":
+                dataSelezionata=query.data.split("_")[-1]
+                dayInput=datetime.date(int(dataSelezionata.split("/")[-1]),int(dataSelezionata.split("/")[-2]),int(dataSelezionata.split("/")[-3]))
+            else:
+                dayInput=datetime.date.today()
+            interface_calendar=calendar_interface(dayInput)
             # await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
             await query.edit_message_text(text="seleziona data",reply_markup=interface_calendar)
-            return MENU
-        return MENU
+            return BUTTON
+        elif query.data=='fashion':
+            await query.answer(text="is_fashion" ,show_alert = True, cache_time=2)
+            return BUTTON
+        elif isinstance(datetime.date(int(query.data.split("/")[-1]),int(query.data.split("/")[-2]),int(query.data.split("/")[-3])),datetime.date):
+            dataSelezionata=datetime.date(int(query.data.split("/")[-1]),int(query.data.split("/")[-2]),int(query.data.split("/")[-3]))
+            await query.edit_message_text(text=f"hai selezionato: {dataSelezionata}")
+            return BUTTON
+        else: 
+            return BUTTON
 
 
 async def fallback(update: Update, context: CallbackContext) -> int:
