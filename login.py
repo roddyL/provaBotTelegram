@@ -21,16 +21,13 @@ month_enToIt={"January":"Gennaio","February":"Febbraio","March":"Marzo","April":
                 "May":"Maggio","June":"Giugno","July":"Luglio","August":"Agosto","September":"Settembre",
                 "October":"Ottobre","November":"Novembre","December":"Dicembre"}
 
-
-
 # variabili conversation handler
 LOGIN, LOGIN_CHECK, MENU, BUTTON=range(4)
 
 # funzioni
 
 def giorni_festivi(year: int, provincia: str) ->List[datetime.date]:
-    """
-    giorni_gestivi()
+    """giorni_gestivi()
 
     Args:
         year (int): anno di cui visualizzare i giorni festivi
@@ -50,6 +47,15 @@ def next_month(
     mese: int,
     anno: int
 ) -> str:
+    """next_month()
+
+    Args:
+        mese (int): mese corrente
+        anno (int): anno corrente
+
+    Returns:
+        str: prossimo mese formato 00/00/0000
+    """
     if mese==12:
         prossimoMese=f"01/01/{anno+1}"
     else:
@@ -61,6 +67,15 @@ def previous_month(
     mese: int,
     anno: int
 ) -> str:
+    """previous_month()
+
+    Args:
+        mese (int): mese corrente
+        anno (int): anno corrente
+
+    Returns:
+        str: mese precedente formato 00/00/0000
+    """
     if mese==1:
         mesePrecedente=f"01/12/{anno-1}"
     else:
@@ -68,28 +83,77 @@ def previous_month(
 
     return mesePrecedente
 
-def strike(text):
+def strike(
+    text: str
+) -> str:
+    """strike()
+
+    Args:
+        text (str): testo da barrare
+
+    Returns:
+        str: testo barrato
+    """
     result = ''
     for c in text:
         result += c + '\u0336'
     return result
 
-def italics(text):
+def italics(
+    text: str
+) -> str:
+    """italics()
+
+    Args:
+        text (str): testo da scrivere in corsivo
+
+    Returns:
+        str: testo in corsivo
+    """
     result = ''
     for c in text:
         result+= '\x1B[3m' + c 
     return result
 
-def bold(text):
+def bold(
+    text: str
+) -> str:
+    """bold()
+
+    Args:
+        text (str): testo da scrivere in grassetto
+
+    Returns:
+        str: testo in grassetto
+    """
     result = ''
     for c in text:
         result += '\033[1m' + c 
     return result
 
 def dayInfo(
-            day: datetime.date,
-            holidays: List[datetime.date]=[]
-            )-> dict:
+    day: datetime.date,
+    holidays: List[datetime.date]=[]
+)-> dict:
+    """dayInfo()
+
+    Args:
+        day (datetime.date): giorno in cui estrapolare i giorni del mese
+        holidays (List[datetime.date], optional): giorni festivi e ferie per l'azienda. Defaults to [].
+
+    Raises:
+        TypeError: day non è un datetime
+
+    Returns:
+        dict: {
+            giorno (int): il numero del giorno,
+            mese (str): il nome del mese in italiano,
+            anno (int): l'anno in numero,
+            lista_giorni (list[int]): giorni del mese da visualizzare, disponibili 🟩 e non disponibili ❌
+            lista_occupati (list[int]): giorni del mese non disponibili
+            datetime (datetime.date): 
+        }
+    """
     if not isinstance(day, datetime.date):
         raise TypeError
 
@@ -109,7 +173,14 @@ def dayInfo(
             else:
                 giorni.append(f"{j}🟩")
                 
-    return {"giorno": day.day, "mese": month_enToIt[calendar.month_name[day.month]], "anno": day.year, "lista_giorni": giorni, "lista_occupati": occupati, "datetime": day}
+    return {
+                "giorno": day.day, 
+                "mese": month_enToIt[calendar.month_name[day.month]], 
+                "anno": day.year, 
+                "lista_giorni": giorni, 
+                "lista_occupati": occupati, 
+                "datetime": day
+            }
 
 def build_menu(
     buttons: List[InlineKeyboardButton],
@@ -117,6 +188,7 @@ def build_menu(
     header_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None,
     footer_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None
 ) -> List[List[InlineKeyboardButton]]:
+
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     if header_buttons:
         menu.insert(0, header_buttons if isinstance(header_buttons, list) else [header_buttons])
@@ -124,13 +196,17 @@ def build_menu(
         menu.append(footer_buttons if isinstance(footer_buttons, list) else [footer_buttons])
     return menu
 
-def insert_whitelist(username):
+def insert_whitelist(
+    username: str
+) -> None:
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"INSERT INTO `whitelist` (`username`,`dt_lastLogin`) VALUES ('{username}',CURRENT_TIMESTAMP)")
             __myconn.commit()
 
-def check_whitelist(already_logged=False):
+def check_whitelist(
+    already_logged: bool=False
+) -> List[str]:
     if already_logged:
         logged=0
     else:
@@ -143,19 +219,24 @@ def check_whitelist(already_logged=False):
 
     return whitelist
 
-def update_session(username):
+def update_session(
+    username: str
+) -> None:
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE username='{username}'")
             __myconn.commit()
 
-def logout(username):
+def logout(
+    username: str
+) -> None:
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"UPDATE `whitelist` SET is_logged=0 WHERE username='{username}'")
             __myconn.commit()
 
-def menu_interface_main(input=None):
+def menu_interface_main(
+) -> tuple(str,InlineKeyboardMarkup):
     keyboard = [
                 InlineKeyboardButton("prenotazioni 📅", callback_data='m1_1'),
                 InlineKeyboardButton("", callback_data='m1_2'),
@@ -165,7 +246,9 @@ def menu_interface_main(input=None):
     text_reply=f""
     return text_reply,reply_markup
 
-def menu_interface_m1_1(input):
+def menu_interface_m1_1(
+    
+) -> tuple(str,InlineKeyboardMarkup):
     keyboard = [
                 InlineKeyboardButton("nuova prenotazione", callback_data='m2_1'),
                 InlineKeyboardButton("cancella prenotazione", callback_data='m2_2'),
@@ -175,7 +258,9 @@ def menu_interface_m1_1(input):
     text_reply=f"Hai scelto: {input} ora scegli ancora: "
     return text_reply, reply_markup
 
-def menu_interface_m2_1(input):
+def menu_interface_m2_1(
+    
+) -> tuple(str,InlineKeyboardMarkup):
     reply_markup=None
     text_reply=f"Hai scelto: {input} ora basta, hai finito girare"
     return text_reply, reply_markup
@@ -183,7 +268,7 @@ def menu_interface_m2_1(input):
 def calendar_interface(
     firstDayMonth: datetime.date=None,
     busy_days: List[datetime.date]=None,
-):
+) -> InlineKeyboardMarkup:
     theDay=dayInfo(firstDayMonth)
     mese=theDay["mese"]
     anno=theDay["anno"]
@@ -214,16 +299,22 @@ def calendar_interface(
     return reply_markup
 
 # func handler
-async def start(update: Update, context: CallbackContext):
+async def start(
+    update: Update,
+    context: CallbackContext
+) -> None:
     if  "in_conversation" in context.user_data.keys():
         if context.user_data['in_conversation'] == True:
             await update.message.reply_text("Ehi! sei ancora loggato, se vuoi riavviare il bot effettua prima il /logout! o per un semplice riavvio scrivi /cancel !")
-            return
+            return None
     
     logger.info("Utente \'%s\' ha avviato la conversazione %s.",update.message.from_user.username, update.message.chat_id)
     await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
 
-async def login(update: Update, context:CallbackContext):
+async def login(
+    update: Update, 
+    context: CallbackContext
+) -> int:
     context.user_data['in_conversation'] = True
     username=update.message.from_user.username
     
@@ -240,7 +331,10 @@ async def login(update: Update, context:CallbackContext):
             "Sei già loggato nel sistema, accedi al menù con /menu!")
         return MENU
 
-async def login_check(update: Update, context:CallbackContext):
+async def login_check(
+    update: Update, 
+    context: CallbackContext
+) -> int:
     
     username=update.message.from_user.username
     passInserita=update.message.text
@@ -254,8 +348,8 @@ async def login_check(update: Update, context:CallbackContext):
     
     if passInserita=="fromfarmtofork":
         if username not in check_whitelist(True) and username not in check_whitelist():
-            logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", username)
             insert_whitelist(username)
+            logger.info("Log in dell'utente \'%s\' riuscito. Registrazione in corso.", username)  
         else:
             update_session(username)
             logger.info("Log in dell'utente \'%s\' riuscito. Update della sessione.", username)
@@ -269,7 +363,10 @@ async def login_check(update: Update, context:CallbackContext):
         # "riprova a inserire la password:")
         return LOGIN_CHECK
 
-async def menu(update: Update, context:CallbackContext):
+async def menu(
+    update: Update, 
+    context: CallbackContext
+) -> int:
     username=update.message.from_user.username
     
     # se è un utente nuovo fa la registrazione
@@ -284,7 +381,10 @@ async def menu(update: Update, context:CallbackContext):
         await update.message.reply_text('Please choose:', reply_markup=interfaccia[1])
         return BUTTON
 
-async def button(update: Update, context: CallbackContext) -> None:
+async def button(
+    update: Update, 
+    context: CallbackContext
+) -> None:
     username=update.callback_query.from_user.username
     
     if username not in check_whitelist():
@@ -323,7 +423,10 @@ async def button(update: Update, context: CallbackContext) -> None:
             return BUTTON
 
 
-async def fallback(update: Update, context: CallbackContext) -> int:
+async def fallback(
+    update: Update, 
+    context: CallbackContext
+) -> int:
     username=update.message.from_user.username
     if update.message.text=="/cancel":
         if username in check_whitelist():
@@ -344,8 +447,9 @@ async def fallback(update: Update, context: CallbackContext) -> int:
     context.user_data['in_conversation'] = False
     return ConversationHandler.END
 
-# main
-def main():
+def main(
+
+) -> None:
     # handler
     start_handler = CommandHandler('start', start)
     login_conv_handler = ConversationHandler(
