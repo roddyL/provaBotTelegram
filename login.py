@@ -28,15 +28,16 @@ LOGIN, LOGIN_CHECK, MENU, BUTTON=range(4)
 
 # funzioni
 
-def giorni_festivi(year: int=datetime.date.today().year, provincia: str="PD") ->List[datetime.date]:
-    """_summary_
+def giorni_festivi(year: int, provincia: str) ->List[datetime.date]:
+    """
+    giorni_gestivi()
 
     Args:
-        year (int): _description_
-        provincia (str):  
+        year (int): anno di cui visualizzare i giorni festivi
+        provincia (str): codice della provincia che rileva giorni festivi locali  
 
     Returns:
-        List[datetime.date]: lista di giorni di ferie
+        List[datetime.date]: lista di giorni festivi
     """
     festivi=[]
     for i, j in sorted(italianHolidays.Italy(subdiv=provincia,years=year).items()):
@@ -44,11 +45,6 @@ def giorni_festivi(year: int=datetime.date.today().year, provincia: str="PD") ->
             festivi.append(i)
 
     return festivi
-
-def giorni_occupati():
-    """comprende le ferie
-    """
-    pass
 
 def next_month(
     mese: int,
@@ -92,22 +88,23 @@ def bold(text):
 
 def dayInfo(
             day: datetime.date,
-            holidays: List[datetime.date]=giorni_festivi()
+            holidays: List[datetime.date]=[]
             )-> dict:
     if not isinstance(day, datetime.date):
         raise TypeError
 
+    holidays=list(set(giorni_festivi(day.year,"PD"))|set(holidays))
     query_uffici_pieni=""
     giorni_uffici_pieni=[]
-
+    print(holidays)
     giorni=[]
     occupati=[]
     for i in calendar.monthcalendar(day.year,day.month):
         for j in i:
             if j==0:
                 giorni.append(" ")
-            elif datetime.date(datetime.date.today().year, datetime.date.today().month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or (day.year==datetime.date.today().year and day.month==datetime.date.today().month and j<=datetime.date.today().day):
-                occupati.append(j)
+            elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or (day.year==datetime.date.today().year and day.month==datetime.date.today().month and j<=datetime.date.today().day):
+                occupati.append(f"{j}")
                 giorni.append(f"{j}❌")
             else:
                 giorni.append(f"{j}🟩")
@@ -197,7 +194,7 @@ def calendar_interface(
     days=[InlineKeyboardButton(i, callback_data="fashion") for i in ["Lu","Ma","Me","Gi","Ve","Sa","Do"]]
     keyboard=[]
     for i in lista_giorni:
-        if i in lista_giorni_occupati or i==" ":
+        if i[:-1] in lista_giorni_occupati or i==" ":
             keyboard.append(InlineKeyboardButton(i,callback_data="fashion"))
         else:
             keyboard.append(InlineKeyboardButton(i,callback_data=f"{int(i[:-1])}/{giorno_datetime.month}/{giorno_datetime.year}"))
