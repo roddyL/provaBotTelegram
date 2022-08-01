@@ -323,6 +323,15 @@ async def start(
     update: Update,
     context: CallbackContext
 ) -> None:
+    """start()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        _type_: None
+    """
     if  "in_conversation" in context.user_data.keys():
         if context.user_data['in_conversation'] == True:
             await update.message.reply_text("Ehi! sei ancora loggato, se vuoi riavviare il bot effettua prima il /logout! o per un semplice riavvio scrivi /cancel !")
@@ -335,6 +344,15 @@ async def login(
     update: Update, 
     context: CallbackContext
 ) -> int:
+    """login()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        int: prossima schermata
+    """
     context.user_data['in_conversation'] = True
     username=update.message.from_user.username
     
@@ -355,7 +373,15 @@ async def login_check(
     update: Update, 
     context: CallbackContext
 ) -> int:
-    
+    """login_check()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        int: prossima schermata
+    """
     username=update.message.from_user.username
     passInserita=update.message.text
     messageId=update.message.message_id
@@ -387,6 +413,15 @@ async def menu(
     update: Update, 
     context: CallbackContext
 ) -> int:
+    """menu()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        int: prossima schermata
+    """
     username=update.message.from_user.username
     
     # se è un utente nuovo fa la registrazione
@@ -404,7 +439,16 @@ async def menu(
 async def button(
     update: Update, 
     context: CallbackContext
-) -> None:
+) -> int:
+    """button()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        int: prossima schermata
+    """
     username=update.callback_query.from_user.username
     
     if username not in check_whitelist():
@@ -447,6 +491,15 @@ async def fallback(
     update: Update, 
     context: CallbackContext
 ) -> int:
+    """fallback()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        int: prossima schermata
+    """
     username=update.message.from_user.username
     if update.message.text=="/cancel":
         if username in check_whitelist():
@@ -467,9 +520,7 @@ async def fallback(
     context.user_data['in_conversation'] = False
     return ConversationHandler.END
 
-def main(
-
-) -> None:
+def main() -> None:
     # handler
     start_handler = CommandHandler('start', start)
     login_conv_handler = ConversationHandler(
