@@ -1,3 +1,6 @@
+# login.py
+
+# import libraries
 import pymysql as mc
 import logging
 import datetime
@@ -141,34 +144,24 @@ def dayInfo(
         day (datetime.date): giorno in cui estrapolare i giorni del mese
         holidays (List[datetime.date], optional): giorni festivi e ferie per l'azienda. Defaults to [].
 
-    Raises:
-        TypeError: day non è un datetime
-
     Returns:
         dict: {
             giorno (int): il numero del giorno,
             mese (str): il nome del mese in italiano,
             anno (int): l'anno in numero,
             lista_giorni (list[int]): giorni del mese da visualizzare, disponibili 🟩 e non disponibili ❌
-            lista_occupati (list[int]): giorni del mese non disponibili
-            datetime (datetime.date): 
         }
     """
-    if not isinstance(day, datetime.date):
-        raise TypeError
 
     holidays=list(set(giorni_festivi(day.year,"PD"))|set(holidays))
     query_uffici_pieni=""
     giorni_uffici_pieni=[]
-    print(holidays)
     giorni=[]
-    occupati=[]
     for i in calendar.monthcalendar(day.year,day.month):
         for j in i:
             if j==0:
                 giorni.append(" ")
             elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or (day.year==datetime.date.today().year and day.month==datetime.date.today().month and j<=datetime.date.today().day):
-                occupati.append(f"{j}")
                 giorni.append(f"{j}❌")
             else:
                 giorni.append(f"{j}🟩")
@@ -177,9 +170,7 @@ def dayInfo(
                 "giorno": day.day, 
                 "mese": month_enToIt[calendar.month_name[day.month]], 
                 "anno": day.year, 
-                "lista_giorni": giorni, 
-                "lista_occupati": occupati, 
-                "datetime": day
+                "lista_giorni": giorni 
             }
 
 def build_menu(
@@ -188,7 +179,17 @@ def build_menu(
     header_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None,
     footer_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None
 ) -> List[List[InlineKeyboardButton]]:
+    """build_menu()
 
+    Args:
+        buttons (List[InlineKeyboardButton]): lista di buttons da visualizzare
+        n_cols (int): numero colonne di buttons
+        header_buttons (Union[InlineKeyboardButton, List[InlineKeyboardButton]], optional): buttons di testa. Defaults to None.
+        footer_buttons (Union[InlineKeyboardButton, List[InlineKeyboardButton]], optional): buttons di coda. Defaults to None.
+
+    Returns:
+        List[List[InlineKeyboardButton]]: buttons ordinati come da parametri
+    """
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     if header_buttons:
         menu.insert(0, header_buttons if isinstance(header_buttons, list) else [header_buttons])
@@ -199,6 +200,11 @@ def build_menu(
 def insert_whitelist(
     username: str
 ) -> None:
+    """insert_whitelist()
+
+    Args:
+        username (str): username da inserire nella whitelist
+    """
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"INSERT INTO `whitelist` (`username`,`dt_lastLogin`) VALUES ('{username}',CURRENT_TIMESTAMP)")
@@ -207,6 +213,15 @@ def insert_whitelist(
 def check_whitelist(
     already_logged: bool=False
 ) -> List[str]:
+    """check_whitelist()
+
+    Args:
+        already_logged (bool, optional): True controllerà le sessioni degli utenti nella whitelist, 
+        False controllerà gli utenti già presenti nella whitelist. Defaults to False.
+
+    Returns:
+        List[str]: utenti presenti nella whitelist
+    """
     if already_logged:
         logged=0
     else:
@@ -222,6 +237,11 @@ def check_whitelist(
 def update_session(
     username: str
 ) -> None:
+    """update_session()
+
+    Args:
+        username (str): utente che deve aggiornare la sessione
+    """
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE username='{username}'")
@@ -230,39 +250,39 @@ def update_session(
 def logout(
     username: str
 ) -> None:
+    """logout()
+
+    Args:
+        username (str): utente che deve effettuare il logout
+    """
     with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"UPDATE `whitelist` SET is_logged=0 WHERE username='{username}'")
             __myconn.commit()
 
+# interfacce
+
 def menu_interface_main(
-) -> tuple(str,InlineKeyboardMarkup):
+) -> tuple[str,InlineKeyboardMarkup]:
     keyboard = [
-                InlineKeyboardButton("prenotazioni 📅", callback_data='m1_1'),
-                InlineKeyboardButton("", callback_data='m1_2'),
-                InlineKeyboardButton("Option 3", callback_data='m1_3')
+                InlineKeyboardButton("prenotazioni 📅", callback_data='menu_prenotazioni'),
+                InlineKeyboardButton("le live demo 🏭", callback_data='menu_liveDemo'),
+                InlineKeyboardButton("eventi 🖥️", callback_data='menu_eventi')
         ]
-    reply_markup = InlineKeyboardMarkup(build_menu(keyboard,n_cols=3))
-    text_reply=f""
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard,n_cols=1))
+    text_reply=f"Schermata principale"
     return text_reply,reply_markup
 
-def menu_interface_m1_1(
-    
-) -> tuple(str,InlineKeyboardMarkup):
+def menu_interface_menu_prenotazioni(
+) -> tuple[str,InlineKeyboardMarkup]:
     keyboard = [
-                InlineKeyboardButton("nuova prenotazione", callback_data='m2_1'),
-                InlineKeyboardButton("cancella prenotazione", callback_data='m2_2'),
-                InlineKeyboardButton("le mie prenotazioni", callback_data='m2_3')
+                InlineKeyboardButton("nuova prenotazione", callback_data='new_prenotazione'),
+                InlineKeyboardButton("cancella prenotazione", callback_data='delete_prenotazione'),
+                InlineKeyboardButton("modifica prenotazioni", callback_data='change_prenotazione'),
+                InlineKeyboardButton("le mie prenotazioni", callback_data='my_prenotazione')
         ]
-    reply_markup = InlineKeyboardMarkup(build_menu(keyboard,n_cols=3))
-    text_reply=f"Hai scelto: {input} ora scegli ancora: "
-    return text_reply, reply_markup
-
-def menu_interface_m2_1(
-    
-) -> tuple(str,InlineKeyboardMarkup):
-    reply_markup=None
-    text_reply=f"Hai scelto: {input} ora basta, hai finito girare"
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard,n_cols=1))
+    text_reply=f"Interfaccia di prenotazione"
     return text_reply, reply_markup
 
 def calendar_interface(
@@ -270,16 +290,15 @@ def calendar_interface(
     busy_days: List[datetime.date]=None,
 ) -> InlineKeyboardMarkup:
     theDay=dayInfo(firstDayMonth)
+    giorno_datetime=firstDayMonth
     mese=theDay["mese"]
     anno=theDay["anno"]
-    giorno_datetime=theDay["datetime"]
     lista_giorni=theDay["lista_giorni"]
-    lista_giorni_occupati=theDay["lista_occupati"]
 
     days=[InlineKeyboardButton(i, callback_data="fashion") for i in ["Lu","Ma","Me","Gi","Ve","Sa","Do"]]
     keyboard=[]
     for i in lista_giorni:
-        if i[:-1] in lista_giorni_occupati or i==" ":
+        if i[-1]=="❌" or i==" ":
             keyboard.append(InlineKeyboardButton(i,callback_data="fashion"))
         else:
             keyboard.append(InlineKeyboardButton(i,callback_data=f"{int(i[:-1])}/{giorno_datetime.month}/{giorno_datetime.year}"))
@@ -298,7 +317,8 @@ def calendar_interface(
     reply_markup=InlineKeyboardMarkup(build_menu(keyboard,n_cols=7, header_buttons= header, footer_buttons=footers))
     return reply_markup
 
-# func handler
+# functions handlers
+
 async def start(
     update: Update,
     context: CallbackContext
@@ -378,7 +398,7 @@ async def menu(
     else:
         update_session(username)
         interfaccia=menu_interface_main()
-        await update.message.reply_text('Please choose:', reply_markup=interfaccia[1])
+        await update.message.reply_text(interfaccia[0], reply_markup=interfaccia[1])
         return BUTTON
 
 async def button(
@@ -397,23 +417,23 @@ async def button(
         query = update.callback_query
         print(f"conferma callback_query: {await query.answer()} query.data:{query.data}")
         
-        if query.data=='m1_1':
-            m1_1_interface=menu_interface_m1_1(query.data)
-            await query.edit_message_text(text=m1_1_interface[0],reply_markup=m1_1_interface[1])
+        if query.data=='menu_prenotazioni':
+            menu_prenotazioni_interface=menu_interface_menu_prenotazioni()
+            await query.edit_message_text(text=menu_prenotazioni_interface[0],reply_markup=menu_prenotazioni_interface[1])
             return BUTTON
-        elif query.data=='m2_1' or query.data[:7]=="chMonth":
-            # m2_1_interface=menu_interface_m2_1(query.data)
+        elif query.data=='new_prenotazione' or query.data[:7]=="chMonth":
+            # new_prenotazione_interface=menu_interface_new_prenotazione(query.data)
             if query.data[:7]=="chMonth":
                 dataSelezionata=query.data.split("_")[-1]
                 dayInput=datetime.date(int(dataSelezionata.split("/")[-1]),int(dataSelezionata.split("/")[-2]),int(dataSelezionata.split("/")[-3]))
             else:
                 dayInput=datetime.date.today()
             interface_calendar=calendar_interface(dayInput)
-            # await query.edit_message_text(text=m2_1_interface[0],reply_markup=m2_1_interface[1])
+            # await query.edit_message_text(text=new_prenotazione_interface[0],reply_markup=new_prenotazione_interface[1])
             await query.edit_message_text(text="seleziona data",reply_markup=interface_calendar)
             return BUTTON
         elif query.data=='fashion':
-            await query.answer(text="is_fashion" ,show_alert = True, cache_time=2)
+            await query.answer(text="is_fashion" ,show_alert = True, cache_time=2000)
             return BUTTON
         elif isinstance(datetime.date(int(query.data.split("/")[-1]),int(query.data.split("/")[-2]),int(query.data.split("/")[-3])),datetime.date):
             dataSelezionata=datetime.date(int(query.data.split("/")[-1]),int(query.data.split("/")[-2]),int(query.data.split("/")[-3]))
