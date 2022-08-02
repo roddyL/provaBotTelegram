@@ -10,7 +10,7 @@ from telegram import InlineKeyboardButton
 from smactbot.vars import month_enToIt
 
 
-def giorni_festivi(year: int, provincia: str) ->List[datetime.date]:
+def giorni_festivi(year: int, provincia: str) -> List[datetime.date]:
     """giorni_gestivi()
 
     Args:
@@ -20,12 +20,13 @@ def giorni_festivi(year: int, provincia: str) ->List[datetime.date]:
     Returns:
         List[datetime.date]: lista di giorni festivi
     """
-    festivi=[]
-    for i, j in sorted(italianHolidays.Italy(subdiv=provincia,years=year).items()):
-        if datetime.date.weekday(i)!=6:
+    festivi = []
+    for i, j in sorted(italianHolidays.Italy(subdiv=provincia, years=year).items()):
+        if datetime.date.weekday(i) != 6:
             festivi.append(i)
 
     return festivi
+
 
 def next_month(
     mese: int,
@@ -40,12 +41,13 @@ def next_month(
     Returns:
         str: prossimo mese formato 00/00/0000
     """
-    if mese==12:
-        prossimoMese=f"01/01/{anno+1}"
+    if mese == 12:
+        prossimoMese = f"01/01/{anno+1}"
     else:
-        prossimoMese=f"01/{mese+1}/{anno}"
+        prossimoMese = f"01/{mese+1}/{anno}"
 
     return prossimoMese
+
 
 def previous_month(
     mese: int,
@@ -60,12 +62,13 @@ def previous_month(
     Returns:
         str: mese precedente formato 00/00/0000
     """
-    if mese==1:
-        mesePrecedente=f"01/12/{anno-1}"
+    if mese == 1:
+        mesePrecedente = f"01/12/{anno-1}"
     else:
-        mesePrecedente=f"01/{mese-1}/{anno}"
+        mesePrecedente = f"01/{mese-1}/{anno}"
 
     return mesePrecedente
+
 
 def strike(
     text: str
@@ -83,6 +86,7 @@ def strike(
         result += c + '\u0336'
     return result
 
+
 def italics(
     text: str
 ) -> str:
@@ -96,8 +100,9 @@ def italics(
     """
     result = ''
     for c in text:
-        result+= '\x1B[3m' + c 
+        result += '\x1B[3m' + c
     return result
+
 
 def bold(
     text: str
@@ -112,13 +117,14 @@ def bold(
     """
     result = ''
     for c in text:
-        result += '\033[1m' + c 
+        result += '\033[1m' + c
     return result
+
 
 def dayInfo(
     day: datetime.date,
-    holidays: List[datetime.date]=[]
-)-> dict:
+    holidays: List[datetime.date] = []
+) -> dict:
     """dayInfo()
 
     Args:
@@ -134,31 +140,34 @@ def dayInfo(
         }
     """
 
-    holidays=list(set(giorni_festivi(day.year,"PD"))|set(holidays))
-    query_uffici_pieni=""
-    giorni_uffici_pieni=[]
-    giorni=[]
-    for i in calendar.monthcalendar(day.year,day.month):
+    holidays = list(set(giorni_festivi(day.year, "PD")) | set(holidays))
+    query_uffici_pieni = ""
+    giorni_uffici_pieni = []
+    giorni = []
+    for i in calendar.monthcalendar(day.year, day.month):
         for j in i:
-            if j==0:
+            if j == 0:
                 giorni.append(" ")
-            elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1]==j or i[-2]==j or (day.year==datetime.date.today().year and day.month==datetime.date.today().month and j<=datetime.date.today().day):
+            elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1] == j or i[-2] == j or (day.year == datetime.date.today().year and day.month == datetime.date.today().month and j <= datetime.date.today().day):
                 giorni.append(f"{j}❌")
             else:
                 giorni.append(f"{j}🟩")
-                
+
     return {
-                "giorno": day.day, 
-                "mese": month_enToIt[calendar.month_name[day.month]], 
-                "anno": day.year, 
-                "lista_giorni": giorni 
-            }
+        "giorno": day.day,
+        "mese": month_enToIt[calendar.month_name[day.month]],
+        "anno": day.year,
+        "lista_giorni": giorni
+    }
+
 
 def build_menu(
     buttons: List[InlineKeyboardButton],
     n_cols: int,
-    header_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None,
-    footer_buttons: Union[InlineKeyboardButton, List[InlineKeyboardButton]]=None
+    header_buttons: Union[InlineKeyboardButton,
+                          List[InlineKeyboardButton]] = None,
+    footer_buttons: Union[InlineKeyboardButton,
+                          List[InlineKeyboardButton]] = None
 ) -> List[List[InlineKeyboardButton]]:
     """build_menu()
 
@@ -173,7 +182,9 @@ def build_menu(
     """
     menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
     if header_buttons:
-        menu.insert(0, header_buttons if isinstance(header_buttons, list) else [header_buttons])
+        menu.insert(0, header_buttons if isinstance(
+            header_buttons, list) else [header_buttons])
     if footer_buttons:
-        menu.append(footer_buttons if isinstance(footer_buttons, list) else [footer_buttons])
+        menu.append(footer_buttons if isinstance(
+            footer_buttons, list) else [footer_buttons])
     return menu

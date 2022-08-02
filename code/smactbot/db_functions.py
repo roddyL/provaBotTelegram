@@ -3,6 +3,7 @@
 import pymysql as mc
 from typing import List
 
+
 def insert_whitelist(
     username: str
 ) -> None:
@@ -11,13 +12,15 @@ def insert_whitelist(
     Args:
         username (str): username da inserire nella whitelist
     """
-    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"INSERT INTO `whitelist` (`username`,`dt_lastLogin`) VALUES ('{username}',CURRENT_TIMESTAMP)")
+            cur.execute(
+                f"INSERT INTO `whitelist` (`username`,`dt_lastLogin`) VALUES ('{username}',CURRENT_TIMESTAMP)")
             __myconn.commit()
 
+
 def check_whitelist(
-    already_logged: bool=False
+    already_logged: bool = False
 ) -> List[str]:
     """check_whitelist()
 
@@ -29,16 +32,17 @@ def check_whitelist(
         List[str]: utenti presenti nella whitelist
     """
     if already_logged:
-        logged=0
+        logged = 0
     else:
-        logged=1
-    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+        logged = 1
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         # update whitelist da database
-        with __myconn.cursor() as cur: 
+        with __myconn.cursor() as cur:
             cur.execute(f"select * from whitelist where is_logged={logged}")
-            whitelist=[i["username"] for i in cur.fetchall()]
+            whitelist = [i["username"] for i in cur.fetchall()]
 
     return whitelist
+
 
 def update_session(
     username: str
@@ -48,10 +52,12 @@ def update_session(
     Args:
         username (str): utente che deve aggiornare la sessione
     """
-    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE username='{username}'")
+            cur.execute(
+                f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE username='{username}'")
             __myconn.commit()
+
 
 def logout(
     username: str
@@ -61,7 +67,8 @@ def logout(
     Args:
         username (str): utente che deve effettuare il logout
     """
-    with mc.connect(host="localhost",user = "root", passwd="",database="tg_bot",cursorclass=mc.cursors.DictCursor) as __myconn:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"UPDATE `whitelist` SET is_logged=0 WHERE username='{username}'")
+            cur.execute(
+                f"UPDATE `whitelist` SET is_logged=0 WHERE username='{username}'")
             __myconn.commit()
