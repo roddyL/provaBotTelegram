@@ -1,10 +1,7 @@
 # smactbot.py
 
-from smactbot.vars import (
-    BUTTON,
-    LOGIN_CHECK,
-    MENU
-)
+from smactbot.vars import *
+
 from telegram.ext import (
     CommandHandler,
     MessageHandler,
@@ -13,17 +10,10 @@ from telegram.ext import (
     Application,
     CallbackQueryHandler
 )
-from smactbot.handlers import (
-    start,
-    login,
-    login_check,
-    menu,
-    button,
-    fallback
-)
+from smactbot.handlers import *
 
 application = Application.builder().token(
-    "5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").build()
+    "5303090973:AAFBaJq-r9NgbHQv4CDNWRkJuzRi0sE1Eb0").arbitrary_callback_data(True).build()
 
 
 # handler
@@ -31,7 +21,7 @@ start_handler = CommandHandler('start', start)
 login_conv_handler = ConversationHandler(
     entry_points=[CommandHandler("login", login)],
     states={
-        LOGIN_CHECK: [MessageHandler(filters.TEXT, login_check)],
+        LOGIN_CHECK: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_check)],
         MENU: [CommandHandler("menu", menu)],
         BUTTON: [CallbackQueryHandler(button)],
     },

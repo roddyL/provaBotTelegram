@@ -1,6 +1,6 @@
 # handlers.py
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
 from smactbot.vars import (
     BUTTON,
@@ -49,6 +49,41 @@ async def start(
     await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
 
 
+async def fallback(
+    update: Update,
+    context: CallbackContext
+) -> int:
+    """fallback()
+
+    Args:
+        update (Update): update del bot
+        context (CallbackContext): contesto del bot
+
+    Returns:
+        int: prossima schermata
+    """
+    username = update.message.from_user.username
+    if update.message.text == "/cancel":
+        if username in check_whitelist():
+            logger.info(
+                "L'utente \'%s\' ha provato a cancellare il login ma risulta loggato.", username)
+            await update.message.reply_text(
+                "Sei loggato, non puoi effettuare questo comando. In questo caso devi effettuare il comando /logout!")
+            return
+        else:
+            logger.info("L'utente \'%s\' ha cancellato il log in.", username)
+            await update.message.reply_text(
+                "Ritorni alla schermata iniziale!")
+    else:
+        logout(username)
+        logger.info("L'utente \'%s\' ha effettuato il logout.", username)
+        await update.message.reply_text(
+            "Logout effettuato!")
+
+    context.user_data['in_conversation'] = False
+    return ConversationHandler.END
+
+
 async def login(
     update: Update,
     context: CallbackContext
@@ -95,13 +130,11 @@ async def login_check(
     """
     username = update.message.from_user.username
     passInserita = update.message.text
-    messageId = update.message.message_id
+    # messageId = update.message.message_id
     chatId = update.message.chat_id
 
     # cancellazione messaggi
     await update.message.delete()
-
-    # await application.bot.delete_message(chat_id=update.message.chat_id, message_id=messageId-1)
 
     if passInserita == "fromfarmtofork":
         if username not in check_whitelist(True) and username not in check_whitelist():
@@ -117,9 +150,6 @@ async def login_check(
     else:
         logger.info(
             "Log in dell'utente \'%s\' non riuscito. Password usata: %s", username, passInserita)
-        # await application.bot.edit_message_text(chat_id=chatId, message_id=update.message.message_id-2, text="riprova a inserire la password:")
-        # await update.message.reply_text(
-        # "riprova a inserire la password:")
         return LOGIN_CHECK
 
 
@@ -172,7 +202,7 @@ async def button(
     else:
         update_session(username)
         query = update.callback_query
-        print(f"conferma callback_query: {await query.answer()} query.data:{query.data}")
+        logger.info(f"conferma callback_query dell'utente {username}: {await query.answer()} query.data:{query.data}")
 
         if query.data == 'menu_prenotazioni':
             menu_prenotazioni_interface = menu_interface_menu_prenotazioni()
@@ -188,7 +218,7 @@ async def button(
                 dayInput = datetime.date.today()
             interface_calendar = calendar_interface(dayInput)
             # await query.edit_message_text(text=new_prenotazione_interface[0],reply_markup=new_prenotazione_interface[1])
-            await query.edit_message_text(text="seleziona data", reply_markup=interface_calendar)
+            await query.edit_message_text(text=interface_calendar[0], reply_markup=interface_calendar[1])
             return BUTTON
         elif query.data == 'fashion':
             await query.answer(text="is_fashion", show_alert=True, cache_time=2000)
@@ -200,38 +230,3 @@ async def button(
             return BUTTON
         else:
             return BUTTON
-
-
-async def fallback(
-    update: Update,
-    context: CallbackContext
-) -> int:
-    """fallback()
-
-    Args:
-        update (Update): update del bot
-        context (CallbackContext): contesto del bot
-
-    Returns:
-        int: prossima schermata
-    """
-    username = update.message.from_user.username
-    if update.message.text == "/cancel":
-        if username in check_whitelist():
-            logger.info(
-                "L'utente \'%s\' ha provato a cancellare il login ma risulta loggato.", username)
-            await update.message.reply_text(
-                "Sei loggato, non puoi effettuare questo comando. In questo caso devi effettuare il comando /logout!")
-            return
-        else:
-            logger.info("L'utente \'%s\' ha cancellato il log in.", username)
-            await update.message.reply_text(
-                "Ritorni alla schermata iniziale!")
-    else:
-        logout(username)
-        logger.info("L'utente \'%s\' ha effettuato il logout.", username)
-        await update.message.reply_text(
-            "Logout effettuato!")
-
-    context.user_data['in_conversation'] = False
-    return ConversationHandler.END

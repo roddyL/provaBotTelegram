@@ -36,7 +36,27 @@ def menu_interface_menu_prenotazioni(
         InlineKeyboardButton("modifica prenotazioni",
                              callback_data='change_prenotazione'),
         InlineKeyboardButton("le mie prenotazioni",
-                             callback_data='my_prenotazione')
+                             callback_data='my_prenotazione'),
+        InlineKeyboardButton("⬅️ indietro",
+                             callback_data='back')                             
+    ]
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+    text_reply = f"Interfaccia di prenotazione"
+    return text_reply, reply_markup
+
+def menu_interface_menu_liveDemo(
+) -> tuple[str, InlineKeyboardMarkup]:
+    keyboard = [
+        InlineKeyboardButton("le nostre live demo",
+                             callback_data='new_prenotazione'),
+        InlineKeyboardButton("la live demo più vicina",
+                             callback_data='delete_prenotazione'),
+        InlineKeyboardButton("modifica prenotazioni",
+                             callback_data='change_prenotazione'),
+        InlineKeyboardButton("le mie prenotazioni",
+                             callback_data='my_prenotazione'),
+        InlineKeyboardButton("⬅️ indietro",
+                             callback_data='back') 
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
     text_reply = f"Interfaccia di prenotazione"
@@ -71,11 +91,13 @@ def calendar_interface(
         footers = []
     else:
         footers = [InlineKeyboardButton(
-            "indietro", callback_data=f"chMonth_{previous_month(giorno_datetime.month, giorno_datetime.year)}")]
+            "⬅️", callback_data=f"chMonth_{previous_month(giorno_datetime.month, giorno_datetime.year)}")]
 
     footers.append(InlineKeyboardButton(
-        "avanti", callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
+        "➡️", callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
 
     reply_markup = InlineKeyboardMarkup(build_menu(
         keyboard, n_cols=7, header_buttons=header, footer_buttons=footers))
-    return reply_markup
+
+    text_reply=f"seleziona data"
+    return text_reply, reply_markup
