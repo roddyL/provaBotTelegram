@@ -167,6 +167,8 @@ def build_menu(
     header_buttons: Union[InlineKeyboardButton,
                           List[InlineKeyboardButton]] = None,
     footer_buttons: Union[InlineKeyboardButton,
+                          List[InlineKeyboardButton]] = None,
+    footer_footer: Union[InlineKeyboardButton,
                           List[InlineKeyboardButton]] = None
 ) -> List[List[InlineKeyboardButton]]:
     """build_menu()
@@ -187,4 +189,7 @@ def build_menu(
     if footer_buttons:
         menu.append(footer_buttons if isinstance(
             footer_buttons, list) else [footer_buttons])
+    if footer_footer:
+        menu.append(footer_footer if isinstance(
+            footer_buttons, list) else [footer_footer])
     return menu

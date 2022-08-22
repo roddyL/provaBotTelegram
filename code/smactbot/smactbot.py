@@ -24,6 +24,7 @@ login_conv_handler = ConversationHandler(
         LOGIN_CHECK: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_check)],
         MENU: [CommandHandler("menu", menu)],
         BUTTON: [CallbackQueryHandler(button)],
+        LOCATION: [MessageHandler(filters.LOCATION,send_location)],
     },
     fallbacks=[CommandHandler(["cancel", "logout"], fallback)]
 )

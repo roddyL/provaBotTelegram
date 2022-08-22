@@ -2,12 +2,8 @@
 
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
-from smactbot.vars import (
-    BUTTON,
-    LOGIN,
-    LOGIN_CHECK,
-    MENU
-)
+from smactbot.vars import *
+
 import datetime
 from smactbot.log import logger
 from smactbot.db_functions import (
@@ -17,11 +13,7 @@ from smactbot.db_functions import (
     logout
 )
 
-from smactbot.interfaces import (
-    menu_interface_main,
-    menu_interface_menu_prenotazioni,
-    calendar_interface
-)
+from smactbot.interfaces import *
 
 # functions handlers
 
@@ -175,8 +167,8 @@ async def menu(
         return ConversationHandler.END
     else:
         update_session(username)
-        interfaccia = menu_interface_main()
-        await update.message.reply_text(interfaccia[0], reply_markup=interfaccia[1])
+        menu_main_interface = menu_interface_main()
+        await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
         return BUTTON
 
 
@@ -204,7 +196,18 @@ async def button(
         query = update.callback_query
         logger.info(f"conferma callback_query dell'utente {username}: {await query.answer()} query.data:{query.data}")
 
-        if query.data == 'menu_prenotazioni':
+        if query.data == "menu_principale":
+            menu_main_interface = menu_interface_main()
+            await query.edit_message_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
+            return BUTTON
+        elif query.data == 'menu_liveDemo':
+            menu_liveDemo_interface = menu_interface_menu_liveDemo()
+            await query.edit_message_text(menu_liveDemo_interface[0], reply_markup=menu_liveDemo_interface[1])
+            return BUTTON
+        elif query.data == 'nearest_liveDemo':
+            await query.edit_message_text("mandami la tua posizione e ti saprò dire la live demo più vicina a te!")
+            return LOCATION
+        elif query.data == 'menu_prenotazioni':
             menu_prenotazioni_interface = menu_interface_menu_prenotazioni()
             await query.edit_message_text(text=menu_prenotazioni_interface[0], reply_markup=menu_prenotazioni_interface[1])
             return BUTTON
@@ -230,3 +233,25 @@ async def button(
             return BUTTON
         else:
             return BUTTON
+
+
+async def send_location(
+    update: Update,
+    context: CallbackContext
+) -> int:
+    username = update.message.from_user.username
+    posizione = update.message.location
+    chatId = update.message.chat_id
+    await update.message.delete()
+    logger.info(
+        f"Posizione dell'utente {username}: longitudine: {posizione.latitude} latitudine:{posizione.longitude}")
+
+    # usare qui la funzione per capire qual'è la live demo più vicina, fa che:
+    # - ritorni l'url di maps con le indicazioni
+    # - inserisci una linea di testo per far capire come si chiama la live demo e magari qualche informazione a riguardo
+
+    location_interface = interface_nearest_liveDemo(
+        maps_url=f"https://www.google.it/maps/dir/{posizione.latitude},{posizione.longitude}/45.41299673570592,11.891006641455297/", text="ecco la sede più vicina è quella di Padova")
+    await context.bot.send_message(chat_id=chatId, text=location_interface[0], reply_markup=location_interface[1])
+
+    return BUTTON

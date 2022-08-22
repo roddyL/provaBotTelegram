@@ -38,7 +38,7 @@ def menu_interface_menu_prenotazioni(
         InlineKeyboardButton("le mie prenotazioni",
                              callback_data='my_prenotazione'),
         InlineKeyboardButton("⬅️ indietro",
-                             callback_data='back')                             
+                             callback_data='menu_principale')                             
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
     text_reply = f"Interfaccia di prenotazione"
@@ -48,20 +48,29 @@ def menu_interface_menu_liveDemo(
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard = [
         InlineKeyboardButton("le nostre live demo",
-                             callback_data='new_prenotazione'),
+                             callback_data='le_liveDemo'),
         InlineKeyboardButton("la live demo più vicina",
-                             callback_data='delete_prenotazione'),
-        InlineKeyboardButton("modifica prenotazioni",
-                             callback_data='change_prenotazione'),
-        InlineKeyboardButton("le mie prenotazioni",
-                             callback_data='my_prenotazione'),
+                             callback_data='nearest_liveDemo'),
         InlineKeyboardButton("⬅️ indietro",
-                             callback_data='back') 
+                             callback_data='menu_principale') 
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
     text_reply = f"Interfaccia di prenotazione"
     return text_reply, reply_markup
 
+def interface_nearest_liveDemo(
+    maps_url: str,
+    text: str
+) -> tuple[str, InlineKeyboardMarkup]:
+    keyboard = [
+        InlineKeyboardButton("Indicazioni 🛣️",
+                             url=maps_url),
+        InlineKeyboardButton("menu principale 🏠",
+                             callback_data='menu_principale') 
+    ]
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+    text_reply = text
+    return text_reply, reply_markup
 
 def calendar_interface(
     firstDayMonth: datetime.date = None,
@@ -96,8 +105,11 @@ def calendar_interface(
     footers.append(InlineKeyboardButton(
         "➡️", callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
 
+    footer_back=[InlineKeyboardButton("⬅️ indietro",
+                             callback_data='menu_prenotazioni')]
+
     reply_markup = InlineKeyboardMarkup(build_menu(
-        keyboard, n_cols=7, header_buttons=header, footer_buttons=footers))
+        keyboard, n_cols=7, header_buttons=header, footer_buttons=footers, footer_footer=footer_back))
 
     text_reply=f"seleziona data"
     return text_reply, reply_markup
