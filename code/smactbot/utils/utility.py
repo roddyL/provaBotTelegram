@@ -199,10 +199,14 @@ def isNameSurname(nome: str) -> bool:
     pass
 
 def isPhoneNumber(phoneNumber: str) -> bool:
+    pat = "+?\[0-9-]+"
+    if re.match(pat,phoneNumber):
+        return True
+    return False
     pass
 
 def isMail(mail: str) -> bool:
-    pat = "^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
+    pat = "^[a-zA-Z0-9-_.]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
     if re.match(pat,mail):
         return True
     return False
