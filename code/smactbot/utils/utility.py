@@ -196,14 +196,18 @@ def build_menu(
     return menu
 
 def isNameSurname(nome: str) -> bool:
-    pass
-
-def isPhoneNumber(phoneNumber: str) -> bool:
-    pat = "+?\[0-9-]+"
-    if re.match(pat,phoneNumber):
+    pat = "[a-zA-Z]+[ ]+[a-zA-Z]+[ ]*"
+    sp_char= re.compile("[^[\w ]]")
+    if re.match(pat,nome)and (sp_char.search(nome) == None):
         return True
     return False
-    pass
+
+def isPhoneNumber(phoneNumber: str) -> bool:
+    pat = "\+?[0-9]{0,2}[-. ]?[0-9]{3}[-. ]?[0-9]{3}[-.]?[0-9]{4}"
+    sp_char= re.compile("[^[0-9 +-.]]")
+    if re.match(pat,phoneNumber) and (sp_char.search(phoneNumber) == None):
+        return True
+    return False
 
 def isMail(mail: str) -> bool:
     pat = "^[a-zA-Z0-9-_.]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
