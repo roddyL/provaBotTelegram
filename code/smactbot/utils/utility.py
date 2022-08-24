@@ -193,3 +193,21 @@ def build_menu(
         menu.append(footer_footer if isinstance(
             footer_buttons, list) else [footer_footer])
     return menu
+
+def isNameSurname(nome: str) -> bool:
+    pass
+
+def isPhoneNumber(phoneNumber: str) -> bool:
+    pass
+
+def isMail(mail: str) -> bool:
+    pass
+
+def check_contacts(contatti: str) -> bool:
+    cont=contatti.split(sep="\n")
+    if len(cont)==4:
+        if isNameSurname(cont[0]) and isNameSurname(cont[1]):
+            if isPhoneNumber(cont[2]):
+                if isMail(cont[3]):
+                    return True
+    return False

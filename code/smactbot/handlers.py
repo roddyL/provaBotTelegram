@@ -284,6 +284,13 @@ async def send_location(
     posizione = update.message.location
     chatId = update.message.chat_id
 
+    if username not in check_whitelist():
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
+        context.user_data['in_conversation'] = False
+        return ConversationHandler.END
+    else:
+        update_session(username)
+
     await update.message.delete()
     logger.info(
         f"Posizione dell'utente {username}: longitudine: {posizione.latitude} latitudine:{posizione.longitude}")
@@ -305,6 +312,13 @@ async def send_seats(
     seats = update.message.text
     chatId = update.message.chat_id
 
+    if username not in check_whitelist():
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
+        context.user_data['in_conversation'] = False
+        return ConversationHandler.END
+    else:
+        update_session(username)
+
     await update.message.delete()
     logger.info(
         f"Posti selezionati dall'utente {username}: {seats}")
@@ -314,3 +328,31 @@ async def send_seats(
     interfaccia_calendar=calendar_interface(firstDayMonth=datetime.date.today(), la_prenotazione=this_prenotazione)
     await context.bot.send_message(chat_id=chatId, text=interfaccia_calendar[0], reply_markup=interfaccia_calendar[1])
     return BUTTON
+
+async def send_contacts(
+    update: Update,
+    context: CallbackContext
+) -> int:
+    
+    username = update.message.from_user.username
+    contatti = update.message.text
+    chatId = update.message.chat_id
+
+    if username not in check_whitelist():
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
+        context.user_data['in_conversation'] = False
+        return ConversationHandler.END
+    else:
+        update_session(username)
+
+    await update.message.delete()
+    logger.info(
+        f"I contatti dell'utente {username}: {contatti}")
+
+    # if insert_contacts(username, contatti):
+    #     return BUTTON
+    # else:
+    #     interfaccia_contacts=contacts_interface()
+    #     await context.bot.send_message(chat_id=chatId, text=interfaccia_contacts[0], reply_markup=interfaccia_contacts[1])
+    #     return CONTACTS
+    
