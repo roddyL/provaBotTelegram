@@ -1,9 +1,11 @@
 # db_functions.py
 
+# import delle librerie
 import pymysql as mc
 from typing import List
 
 
+# La funzione inserisce nel database lo username dell'utente che ha effettuato il log in, solo se non era presente nella whitelist.
 def insert_whitelist(
     username: str
 ) -> None:
@@ -19,6 +21,9 @@ def insert_whitelist(
             __myconn.commit()
 
 
+# La funzione va a prendere la lista di persone che hanno già fatto il log in nel sistema.
+# Si può cambiare il campo booleano already_logged per ricevere la lista di persone che sono ancora loggate
+# oppure per ricevere la lista dei log delle persone che hanno fatto il log in, ma la cui sessione è scaduta.
 def check_whitelist(
     already_logged: bool = False
 ) -> List[str]:
@@ -44,6 +49,7 @@ def check_whitelist(
     return whitelist
 
 
+# La funzione rende possibile fare l'update dell'ultimo log in dell'utente
 def update_session(
     username: str
 ) -> None:
@@ -59,6 +65,7 @@ def update_session(
             __myconn.commit()
 
 
+# La funzione rende possibile togliere il log in alla persona senza cancellarla dal database
 def logout(
     username: str
 ) -> None:
