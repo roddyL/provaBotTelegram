@@ -8,6 +8,7 @@ import calendar
 from holidays import italy as italianHolidays
 from telegram import InlineKeyboardButton
 from smactbot.vars import month_enToIt
+import re
 
 
 def giorni_festivi(year: int, provincia: str) -> List[datetime.date]:
@@ -201,7 +202,10 @@ def isPhoneNumber(phoneNumber: str) -> bool:
     pass
 
 def isMail(mail: str) -> bool:
-    pass
+    pat = "^[a-zA-Z0-9-_]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
+    if re.match(pat,mail):
+        return True
+    return False
 
 def check_contacts(contatti: str) -> bool:
     cont=contatti.split(sep="\n")
