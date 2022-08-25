@@ -196,7 +196,7 @@ def build_menu(
     return menu
 
 def isNameSurname(nome: str) -> bool:
-    pat = "[a-zA-Z]+[ ]+[a-zA-Z]+[ ]*"
+    pat = "[a-zA-Z ]+"
     sp_char= re.compile("[^[\w ]]")
     if re.match(pat,nome)and (sp_char.search(nome) == None):
         return True

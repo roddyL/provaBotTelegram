@@ -14,19 +14,30 @@ from typing import List
 
 # interfacce
 
-
 def menu_interface_main(
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard = [
-        InlineKeyboardButton(
-            "prenotazioni 📅", callback_data='menu_prenotazioni'),
+        InlineKeyboardButton("prenotazioni 📅", callback_data='menu_prenotazioni'),
         InlineKeyboardButton("le live demo 🏭", callback_data='menu_liveDemo'),
-        InlineKeyboardButton("eventi 🖥️", callback_data='menu_eventi')
+        InlineKeyboardButton("eventi 🖥️", callback_data='menu_eventi'),
+        InlineKeyboardButton("il mio profilo 👤", callback_data='menu_profilo'),
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
     text_reply = f"Schermata principale"
     return text_reply, reply_markup
 
+def menu_profile_interface(
+    contatti: str
+) -> tuple[str, InlineKeyboardMarkup]:
+    keyboard = [
+        InlineKeyboardButton("Modifica contatti", callback_data='menu_modificaContatti'),
+        InlineKeyboardButton("Cancella profilo", callback_data='menu_cancellaProfilo'),
+        InlineKeyboardButton("⬅️ indietro",
+                             callback_data='menu_principale')
+    ]
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+    text_reply = f"I tuoi contatti:\n{contatti}"
+    return text_reply, reply_markup
 
 def menu_interface_menu_prenotazioni(
 ) -> tuple[str, InlineKeyboardMarkup]:
@@ -74,27 +85,6 @@ def interface_nearest_liveDemo(
     text_reply = text
     return text_reply, reply_markup
 
-# def hours_interface(
-#     giornoSelezionato: str,
-#     fasceOrarie: List[str] = ["mattino", "pomeriggio"]
-# ) -> tuple[str, InlineKeyboardMarkup]:
-
-#     keyboard = []
-#     for i in fasceOrarie:
-#         keyboard.append(InlineKeyboardButton(i, callback_data=f'fascia_{i}'))
-
-#     if keyboard == []:
-#         text_reply = f"I posti si sono esauriti per il giorno{giornoSelezionato}, mi dispiace!\nTorna indietro e seleziona un'altro giorno"
-#     else:
-#         text_reply = f"Seleziona la fascia oraria desiderata per il giorno {giornoSelezionato}: "
-
-#     footers = [InlineKeyboardButton("⬅️ indietro",
-#                                     callback_data='new_prenotazione')]
-
-#     reply_markup = InlineKeyboardMarkup(build_menu(
-#         keyboard, n_cols=1, footer_buttons=footers))
-
-#     return text_reply, reply_markup
 
 def back_interface(
     la_callback_data
@@ -104,48 +94,6 @@ def back_interface(
         keyboard, n_cols=1))
     text_reply="Premi per ritornare indietro"
     return text_reply, reply_markup
-
-# def calendar_interface(
-#     firstDayMonth: datetime.date = None,
-#     busy_days: List[datetime.date] = None,
-# ) -> InlineKeyboardMarkup:
-#     theDay = dayInfo(firstDayMonth)
-#     giorno_datetime = firstDayMonth
-#     mese = theDay["mese"]
-#     anno = theDay["anno"]
-#     lista_giorni = theDay["lista_giorni"]
-
-#     days = [InlineKeyboardButton(i, callback_data="fashion") for i in [
-#         "Lu", "Ma", "Me", "Gi", "Ve", "Sa", "Do"]]
-#     keyboard = []
-#     for i in lista_giorni:
-#         if i[-1] == "❌" or i == " ":
-#             keyboard.append(InlineKeyboardButton(i, callback_data="fashion"))
-#         else:
-#             keyboard.append(InlineKeyboardButton(
-#                 i, callback_data=f"{int(i[:-1])}/{giorno_datetime.month}/{giorno_datetime.year}"))
-
-#     days += keyboard
-#     keyboard = days
-
-#     header = [InlineKeyboardButton(f"{mese} {anno}", callback_data="fashion")]
-#     if giorno_datetime.month == datetime.date.today().month:
-#         footers = []
-#     else:
-#         footers = [InlineKeyboardButton(
-#             "⬅️", callback_data=f"chMonth_{previous_month(giorno_datetime.month, giorno_datetime.year)}")]
-
-#     footers.append(InlineKeyboardButton(
-#         "➡️", callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
-
-#     footer_back = [InlineKeyboardButton("⬅️ indietro",
-#                                         callback_data='menu_prenotazioni')]
-
-#     reply_markup = InlineKeyboardMarkup(build_menu(
-#         keyboard, n_cols=7, header_buttons=header, footer_buttons=footers, footer_footer=footer_back))
-
-#     text_reply = f"seleziona data"
-#     return text_reply, reply_markup
 
 def hours_interface(
     la_prenotazione: Prenotazione,
@@ -237,3 +185,67 @@ def calendar_interface(
 
     text_reply = f"seleziona data"
     return text_reply, reply_markup
+
+# def calendar_interface(
+#     firstDayMonth: datetime.date = None,
+#     busy_days: List[datetime.date] = None,
+# ) -> InlineKeyboardMarkup:
+#     theDay = dayInfo(firstDayMonth)
+#     giorno_datetime = firstDayMonth
+#     mese = theDay["mese"]
+#     anno = theDay["anno"]
+#     lista_giorni = theDay["lista_giorni"]
+
+#     days = [InlineKeyboardButton(i, callback_data="fashion") for i in [
+#         "Lu", "Ma", "Me", "Gi", "Ve", "Sa", "Do"]]
+#     keyboard = []
+#     for i in lista_giorni:
+#         if i[-1] == "❌" or i == " ":
+#             keyboard.append(InlineKeyboardButton(i, callback_data="fashion"))
+#         else:
+#             keyboard.append(InlineKeyboardButton(
+#                 i, callback_data=f"{int(i[:-1])}/{giorno_datetime.month}/{giorno_datetime.year}"))
+
+#     days += keyboard
+#     keyboard = days
+
+#     header = [InlineKeyboardButton(f"{mese} {anno}", callback_data="fashion")]
+#     if giorno_datetime.month == datetime.date.today().month:
+#         footers = []
+#     else:
+#         footers = [InlineKeyboardButton(
+#             "⬅️", callback_data=f"chMonth_{previous_month(giorno_datetime.month, giorno_datetime.year)}")]
+
+#     footers.append(InlineKeyboardButton(
+#         "➡️", callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
+
+#     footer_back = [InlineKeyboardButton("⬅️ indietro",
+#                                         callback_data='menu_prenotazioni')]
+
+#     reply_markup = InlineKeyboardMarkup(build_menu(
+#         keyboard, n_cols=7, header_buttons=header, footer_buttons=footers, footer_footer=footer_back))
+
+#     text_reply = f"seleziona data"
+#     return text_reply, reply_markup
+# 
+# # def hours_interface(
+#     giornoSelezionato: str,
+#     fasceOrarie: List[str] = ["mattino", "pomeriggio"]
+# ) -> tuple[str, InlineKeyboardMarkup]:
+
+#     keyboard = []
+#     for i in fasceOrarie:
+#         keyboard.append(InlineKeyboardButton(i, callback_data=f'fascia_{i}'))
+
+#     if keyboard == []:
+#         text_reply = f"I posti si sono esauriti per il giorno{giornoSelezionato}, mi dispiace!\nTorna indietro e seleziona un'altro giorno"
+#     else:
+#         text_reply = f"Seleziona la fascia oraria desiderata per il giorno {giornoSelezionato}: "
+
+#     footers = [InlineKeyboardButton("⬅️ indietro",
+#                                     callback_data='new_prenotazione')]
+
+#     reply_markup = InlineKeyboardMarkup(build_menu(
+#         keyboard, n_cols=1, footer_buttons=footers))
+
+#     return text_reply, reply_markup

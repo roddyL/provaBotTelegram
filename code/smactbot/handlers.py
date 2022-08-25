@@ -9,12 +9,7 @@ from smactbot.utils.liveDemo_geolocation import nearest_production
 
 import datetime
 from smactbot.log import logger
-from smactbot.db_functions import (
-    insert_whitelist,
-    check_whitelist,
-    update_session,
-    logout
-)
+from smactbot.db_functions import *
 
 from smactbot.interfaces import *
 
@@ -71,12 +66,12 @@ async def fallback(
             logger.info("L'utente \'%s\' ha cancellato il log in.", username)
             await update.message.reply_text(
                 "Ritorni alla schermata iniziale!")
-    elif comando=="/logout":
+    elif comando=="/logout" and username in check_whitelist():
         logout(username)
         logger.info("L'utente \'%s\' ha effettuato il logout.", username)
         await update.message.reply_text(
             "Logout effettuato!")
-    elif comando=="/back":
+    elif comando=="/back" and username in check_whitelist():
         logger.info(
             f"L'utente {username} ha digitato il comando /back")
         il_back=context.user_data["back"]
@@ -86,6 +81,8 @@ async def fallback(
             interfaccia_back=back_interface(il_back)
             await context.bot.send_message(chat_id=chatId, text=interfaccia_back[0], reply_markup=interfaccia_back[1])
             return BUTTON
+    else:
+        return LOGIN_CHECK
 
     context.user_data['in_conversation'] = False
     return ConversationHandler.END
@@ -145,9 +142,12 @@ async def login_check(
 
     if passInserita == "fromfarmtofork":
         if username not in check_whitelist(True) and username not in check_whitelist():
-            insert_whitelist(username)
+            context.user_data["logged"]=True
             logger.info(
                 "Log in dell'utente \'%s\' riuscito. Registrazione in corso.", username)
+            # fai partire la richiesta dei contatti
+            await context.bot.send_message(chat_id=chatId, text="Password corretta!\n Ora inserisci i tuoi contatti in questo modo:\nNome\nCognome\nnumero di telefono\nla tua mail")
+            return CONTACTS
         else:
             update_session(username)
             logger.info(
@@ -234,6 +234,9 @@ async def button(
                 interfaccia_hours = hours_interface(la_prenotazione=this_prenotazione)
                 await query.edit_message_text(text=interfaccia_hours[0], reply_markup=interfaccia_hours[1])
                 return BUTTON
+            else:
+                # dai conferma della prenotazione o torni indietro
+                pass
         elif isinstance(query.data, str): 
             if query.data == "menu_principale":
                 menu_main_interface = menu_interface_main()
@@ -250,6 +253,10 @@ async def button(
             elif query.data == 'menu_prenotazioni':
                 menu_prenotazioni_interface = menu_interface_menu_prenotazioni()
                 await query.edit_message_text(text=menu_prenotazioni_interface[0], reply_markup=menu_prenotazioni_interface[1])
+                return BUTTON
+            elif query.data == "menu_profilo":
+                interfaccia_profilo=menu_profile_interface(show_contacts(username=username))
+                await query.edit_message_text(text=interfaccia_profilo[0], reply_markup=interfaccia_profilo[1])
                 return BUTTON
             # elif query.data == 'new_prenotazione' or query.data[:7] == "chMonth":
             #     # new_prenotazione_interface=menu_interface_new_prenotazione(query.data)
@@ -338,21 +345,17 @@ async def send_contacts(
     contatti = update.message.text
     chatId = update.message.chat_id
 
-    if username not in check_whitelist():
+    if not context.user_data['logged']==True:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
-        context.user_data['in_conversation'] = False
-        return ConversationHandler.END
-    else:
-        update_session(username)
 
     await update.message.delete()
     logger.info(
         f"I contatti dell'utente {username}: {contatti}")
 
-    # if insert_contacts(username, contatti):
-    #     return BUTTON
-    # else:
-    #     interfaccia_contacts=contacts_interface()
-    #     await context.bot.send_message(chat_id=chatId, text=interfaccia_contacts[0], reply_markup=interfaccia_contacts[1])
-    #     return CONTACTS
+    if insert_contacts(username, contatti):
+        await context.bot.send_message(chat_id=chatId, text="Hai registrato i tuoi contatti!\nOra puoi accedere alle funzioni del bot!\nDigita il comando /menu per accedere al menu")
+        return MENU
+    else:
+        await context.bot.send_message(chat_id=chatId, text="Attenzione, hai sbagliato ad inserire i contatti correttamente.\nTi invitiamo a rispettare le regole perfettamente")
+        return CONTACTS
     

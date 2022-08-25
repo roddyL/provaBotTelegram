@@ -4,7 +4,7 @@
 import pymysql as mc
 from typing import List
 
-from code.smactbot.utils.utility import check_contacts
+from smactbot.utils.utility import check_contacts
 
 def insert_whitelist(
     username: str
@@ -86,6 +86,26 @@ def insert_contacts(
     username: str,
     contatti: str
 ):
-    check_contacts(contatti)
+    if check_contacts(contatti):
+        insert_whitelist(username)
+        # inserire query per il database
+        cont=contatti.split("\n")
+        query=f"INSERT INTO `utente` (`Username`, `Nome`, `Cognome`, `Recapito_telefonico`, `Mail`) VALUES ('{username}', '{cont[0]}', '{cont[1]}', '{cont[2]}', '{cont[3]}')"
+        with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+            with __myconn.cursor() as cur:
+                cur.execute(query)
+                __myconn.commit()
+        return True
+    else:
+        return False
     
-    pass
+def show_contacts(
+    username: str
+) -> str:
+    query=f"SELECT Nome, Cognome, Recapito_telefonico, Mail FROM `utente` where Username='{username}'"
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(query)
+            contatti=cur.fetchall()[0]
+            return f"{contatti['Nome']}\n{contatti['Cognome']}\n{contatti['Recapito_telefonico']}\n{contatti['Mail']}"
+        

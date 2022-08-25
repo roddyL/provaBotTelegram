@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Creato il: Lug 19, 2022 alle 17:58
+-- Creato il: Ago 25, 2022 alle 12:51
 -- Versione del server: 10.4.22-MariaDB
 -- Versione PHP: 8.1.2
 
@@ -24,6 +24,21 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `utente`
+--
+
+CREATE TABLE `utente` (
+  `Id` int(5) NOT NULL,
+  `Username` varchar(15) NOT NULL,
+  `Nome` varchar(30) NOT NULL,
+  `Cognome` varchar(20) NOT NULL,
+  `Recapito_telefonico` varchar(15) NOT NULL,
+  `Mail` varchar(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `whitelist`
 --
 
@@ -36,15 +51,15 @@ CREATE TABLE `whitelist` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Dump dei dati per la tabella `whitelist`
---
-
-INSERT INTO `whitelist` (`id`, `username`, `is_logged`, `dt_firstLogin`, `dt_lastLogin`) VALUES
-(1, 'TunechiL1L', 1, '2022-07-19 17:56:49', '2022-07-16 15:51:59');
-
---
 -- Indici per le tabelle scaricate
 --
+
+--
+-- Indici per le tabelle `utente`
+--
+ALTER TABLE `utente`
+  ADD PRIMARY KEY (`Username`),
+  ADD KEY `Id` (`Id`);
 
 --
 -- Indici per le tabelle `whitelist`
@@ -58,16 +73,32 @@ ALTER TABLE `whitelist`
 --
 
 --
+-- AUTO_INCREMENT per la tabella `utente`
+--
+ALTER TABLE `utente`
+  MODIFY `Id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT per la tabella `whitelist`
 --
 ALTER TABLE `whitelist`
-  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- Limiti per le tabelle scaricate
+--
+
+--
+-- Limiti per la tabella `utente`
+--
+ALTER TABLE `utente`
+  ADD CONSTRAINT `utente_ibfk_1` FOREIGN KEY (`Username`) REFERENCES `whitelist` (`username`) ON DELETE CASCADE;
 
 DELIMITER $$
 --
 -- Eventi
 --
-CREATE DEFINER=`root`@`localhost` EVENT `chiusura sessioni` ON SCHEDULE EVERY 1 DAY STARTS '2022-07-19 00:00:00' ON COMPLETION PRESERVE ENABLE DO UPDATE whitelist SET is_logged = 0 WHERE DATEDIFF(CURRENT_TIMESTAMP, dt_lastLogin)>=4$$
+CREATE DEFINER=`root`@`localhost` EVENT `chiusura sessioni` ON SCHEDULE EVERY 3 HOUR STARTS '2022-07-19 00:00:00' ON COMPLETION PRESERVE ENABLE DO UPDATE whitelist SET is_logged = 0 WHERE DATEDIFF(CURRENT_TIMESTAMP, dt_lastLogin)>=4$$
 
 DELIMITER ;
 COMMIT;
