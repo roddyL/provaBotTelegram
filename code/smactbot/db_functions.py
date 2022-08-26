@@ -7,7 +7,7 @@ from typing import List
 from smactbot.utils.utility import check_contacts
 
 def insert_whitelist(
-    username: str
+    telegram_id: int
 ) -> None:
     """insert_whitelist()
     
@@ -19,7 +19,7 @@ def insert_whitelist(
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(
-                f"INSERT INTO `whitelist` (`username`,`dt_lastLogin`) VALUES ('{username}',CURRENT_TIMESTAMP)")
+                f"INSERT INTO `whitelist` (`telegram_id`,`dt_lastLogin`) VALUES ({telegram_id},CURRENT_TIMESTAMP)")
             __myconn.commit()
 
 def check_whitelist(
@@ -46,12 +46,12 @@ def check_whitelist(
         # update whitelist da database
         with __myconn.cursor() as cur:
             cur.execute(f"select * from whitelist where is_logged={logged}")
-            whitelist = [i["username"] for i in cur.fetchall()]
+            whitelist = [i["telegram_id"] for i in cur.fetchall()]
 
     return whitelist
 
 def update_session(
-    username: str
+    telegram_id: int
 ) -> None:
     """update_session()
 
@@ -63,11 +63,11 @@ def update_session(
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(
-                f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE username='{username}'")
+                f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE telegram_id={telegram_id}")
             __myconn.commit()
 
 def logout(
-    username: str
+    telegram_id: int
 ) -> None:
     """logout()
 
@@ -79,18 +79,19 @@ def logout(
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(
-                f"UPDATE `whitelist` SET is_logged=0 WHERE username='{username}'")
+                f"UPDATE `whitelist` SET is_logged=0 WHERE telegram_id={telegram_id}")
             __myconn.commit()
 
 def insert_contacts(
+    telegram_id: int,
     username: str,
     contatti: str
 ):
     if check_contacts(contatti):
-        insert_whitelist(username)
+        insert_whitelist(telegram_id)
         # inserire query per il database
         cont=contatti.split("\n")
-        query=f"INSERT INTO `utente` (`Username`, `Nome`, `Cognome`, `Recapito_telefonico`, `Mail`) VALUES ('{username}', '{cont[0]}', '{cont[1]}', '{cont[2]}', '{cont[3]}')"
+        query=f"INSERT INTO `utente` (`telegram_id`, `Username`, `Nome`, `Cognome`, `Recapito_telefonico`, `Mail`) VALUES ({telegram_id},'{username}', '{cont[0]}', '{cont[1]}', '{cont[2]}', '{cont[3]}')"
         with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
             with __myconn.cursor() as cur:
                 cur.execute(query)
@@ -100,9 +101,9 @@ def insert_contacts(
         return False
     
 def show_contacts(
-    username: str
+    telegram_id: int
 ) -> str:
-    query=f"SELECT Nome, Cognome, Recapito_telefonico, Mail FROM `utente` where Username='{username}'"
+    query=f"SELECT Nome, Cognome, Recapito_telefonico, Mail FROM `utente` where telegram_id={telegram_id}"
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(query)

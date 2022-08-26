@@ -7,7 +7,7 @@ class Prenotazione():
         self.seats = None # posti necessari per l'utente
         self.the_datetime = None # giorno prenotazione
         self.hours = None  # fascia oraria
-        self.username = None # username telegram utente
+        self.telegram_id = None # telegram_id utente
         self.chMonth=None # cambiare mese corrente
 
     def __repr__(self):
@@ -28,13 +28,13 @@ class Prenotazione():
     def setHours(self, hours: str):
         self.hours=hours
 
-    def carica_prenotazione(self, username: str) -> bool:
+    def carica_prenotazione(self, telegram_id: str) -> bool:
         query=""
         pass
 
-    def conferma(self, username: str) -> bool:
+    def conferma(self, telegram_id: str) -> bool:
         if self.seats and self.the_datetime and self.hours:    
-            if self.carica_prenotazione(username):
+            if self.carica_prenotazione(telegram_id):
                 return True
         return False
     
