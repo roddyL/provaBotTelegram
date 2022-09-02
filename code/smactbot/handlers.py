@@ -1,6 +1,7 @@
 # handlers.py
 
 import telnetlib
+from tkinter import Button
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
 from smactbot.models import Prenotazione
@@ -223,23 +224,28 @@ async def button(
                 await query.edit_message_text("Inserisci il numero di posti da prenotare: \ndigita il comando /back per tornare alla schermata precedente")
                 return SEATS
             elif this_prenotazione.chMonth:
-                dayInput = this_prenotazione.chMonth
+                this_prenotazione.setMonthSelected(this_prenotazione.chMonth) 
                 this_prenotazione.setChMonth(None)
-                interface_calendar = calendar_interface(firstDayMonth=dayInput, la_prenotazione=this_prenotazione)
+                interface_calendar = calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
                 await query.edit_message_text(text=interface_calendar[0], reply_markup=interface_calendar[1])
                 return BUTTON
             elif not this_prenotazione.the_datetime:
                 context.user_data['back']=SEATS
-                interface_calendar = calendar_interface(firstDayMonth=datetime.date.today(), la_prenotazione=this_prenotazione)
+                interface_calendar = calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
                 await query.edit_message_text(text=interface_calendar[0], reply_markup=interface_calendar[1])
                 return BUTTON
             elif not this_prenotazione.hours:
-                interfaccia_hours = hours_interface(la_prenotazione=this_prenotazione)
+                interfaccia_hours = hours_interface(la_prenotazione=this_prenotazione, busy_hours=check_busyHours(data=this_prenotazione.the_datetime, posti_daPrenotare=this_prenotazione.seats))
                 await query.edit_message_text(text=interfaccia_hours[0], reply_markup=interfaccia_hours[1])
                 return BUTTON
+            elif not this_prenotazione.ready:
+                interfaccia_conferma= confirm_reservation_interface(telegram_id=telegram_id, la_prenotazione=this_prenotazione)
+                await query.edit_message_text(text=interfaccia_conferma[0], reply_markup=interfaccia_conferma[1])
+                return BUTTON
             else:
-                # dai conferma della prenotazione o torni indietro
-                pass
+                interfaccia_finePrenotazione=endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id))
+                await query.edit_message_text(text=interfaccia_finePrenotazione[0], reply_markup=interfaccia_finePrenotazione[1])
+                return BUTTON
         elif isinstance(query.data, str): 
             if query.data == "menu_principale":
                 menu_main_interface = menu_interface_main()
@@ -337,7 +343,7 @@ async def send_seats(
     this_prenotazione=context.user_data['this_prenotazione']
     # this_prenotazione=Prenotazione()
     this_prenotazione.setSeats(int(seats))
-    interfaccia_calendar=calendar_interface(firstDayMonth=datetime.date.today(), la_prenotazione=this_prenotazione)
+    interfaccia_calendar=calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
     await context.bot.send_message(chat_id=chatId, text=interfaccia_calendar[0], reply_markup=interfaccia_calendar[1])
     return BUTTON
 

@@ -97,16 +97,21 @@ def back_interface(
 
 def hours_interface(
     la_prenotazione: Prenotazione,
-    fasceOrarie: List[str] = ["mattino", "pomeriggio"],
+    busy_hours: List[str]
 ) -> tuple[str, InlineKeyboardMarkup]:
 
+    fasceOrarie=["mattino", "pomeriggio", "intera giornata"]
+    if len(busy_hours)>0:
+        fasceOrarie.pop()
+        if len(busy_hours)>1:
+            fasceOrarie=[]
+        else:
+            fasceOrarie.remove(busy_hours[0])
     keyboard = []
     for i in fasceOrarie:
         copia=copy.deepcopy(la_prenotazione)
         copia.setHours(i)
-        keyboard.append(InlineKeyboardButton(i,
-                                             callback_data=copia)
-                        )
+        keyboard.append(InlineKeyboardButton(i,callback_data=copia))
 
     if keyboard == []:
         text_reply = f"I posti si sono esauriti per il giorno{la_prenotazione.the_datetime}, mi dispiace!\nTorna indietro e seleziona un'altro giorno"
@@ -125,10 +130,10 @@ def hours_interface(
 
 def calendar_interface(
     la_prenotazione: Prenotazione,
-    firstDayMonth: datetime.date = None,
-    busy_days: List[datetime.date] = None,
+    giorni_uffici_pieni: List[datetime.date],
+    firstDayMonth: datetime.date = None
 ) -> InlineKeyboardMarkup:
-    theDay = dayInfo(firstDayMonth)
+    theDay = dayInfo(day=firstDayMonth, giorni_uffici_pieni=giorni_uffici_pieni)
     giorno_datetime = firstDayMonth
     mese = theDay["mese"]
     anno = theDay["anno"]
@@ -185,6 +190,52 @@ def calendar_interface(
 
     text_reply = f"seleziona data"
     return text_reply, reply_markup
+
+def confirm_reservation_interface(
+    telegram_id: int,
+    la_prenotazione: Prenotazione
+) -> tuple[str, InlineKeyboardMarkup]:
+    text_reply=f"Riepilogo prenotazione:\n \
+        posti prenotati: {la_prenotazione.seats}\n \
+        data: {la_prenotazione.the_datetime}\n \
+        fascia oraria: {la_prenotazione.hours}\n\n \
+        vuoi confermare la prenotazione?"
+    
+    copia=copy.deepcopy(la_prenotazione)
+    copia.setHours(None)
+    la_prenotazione.setReady(True)
+    keyboard = [
+        InlineKeyboardButton("conferma",
+                             callback_data=la_prenotazione),
+        InlineKeyboardButton("⬅️ indietro",
+                             callback_data=copia)
+    ]
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+
+    return text_reply, reply_markup
+
+def endReservation_interface(
+    buonaRiuscita: bool    
+) -> tuple[str, InlineKeyboardMarkup]:
+    keyboard = [
+        InlineKeyboardButton("Nuova prenotazione",
+                             callback_data=Prenotazione()),
+        InlineKeyboardButton("menu principale 🏠",
+                             callback_data='menu_principale')
+    ]
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+
+    if buonaRiuscita:
+        text_reply = f"prenotazione confermata!\nOra scegli se effettuare una nuova prenotazione o ritornare al menu principale!"
+    else:
+        text_reply = f"la prenotazione non ha avuto successo\nEffettua per piacere una nuova prenotazione oppure torna al menu principale"
+
+    return text_reply, reply_markup
+
+def seats_interface(
+    
+) -> tuple[str, InlineKeyboardMarkup]:
+    pass
 
 # def calendar_interface(
 #     firstDayMonth: datetime.date = None,

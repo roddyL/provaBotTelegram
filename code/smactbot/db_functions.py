@@ -1,10 +1,12 @@
 # db_functions.py
 
 # import delle librerie
+from ast import Return
+import datetime
 import pymysql as mc
 from typing import List
 
-from smactbot.utils.utility import check_contacts
+from smactbot.utils.utility import check_contacts, create_idPrenotazione
 
 def insert_whitelist(
     telegram_id: int
@@ -82,13 +84,75 @@ def logout(
                 f"UPDATE `whitelist` SET is_logged=0 WHERE telegram_id={telegram_id}")
             __myconn.commit()
 
+def insert_prenotazione(
+    telegram_id: int, 
+    seats: int, 
+    the_datetime: datetime.date, 
+    hours: str
+) -> bool:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"select id_prenotazione from prenotazione where data='{the_datetime}' order by id desc LIMIT 1")
+            print()
+            n_incremental=cur.fetchall()
+            if not n_incremental:
+                n_incremental=0
+            else:
+                n_incremental=int(n_incremental[0]["id_prenotazione"].split("_")[1])
+                print(n_incremental)
+            
+            idPrenotazione=create_idPrenotazione(the_datetime=the_datetime, n_incremental=n_incremental)
+            if not hours=="intera giornata":
+                query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
+                        VALUES  ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', '{hours}', '{the_datetime}',  current_timestamp())"
+            else:
+                query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
+                        VALUES  ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', 'mattino', '{the_datetime}',  current_timestamp()),\
+                                ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', 'pomeriggio', '{the_datetime}',  current_timestamp())"
+            result=cur.execute(query)
+            __myconn.commit()
+            if result==0 or (result==1 and hours=="intera giornata"):
+                return False
+            else:
+                return True            
+
+def check_busyDays(
+    posti_daPrenotare: int,
+    monthSelected: datetime.date
+) -> List[datetime.date]:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"select `p`.`data` AS `data`,`u`.`posti` - sum(`p`.`posti_prenotati`) AS `posti_disponibili` \
+                            from (`tg_bot`.`prenotazione` `p` join `tg_bot`.`ufficio` `u` on(`p`.`nome_ufficio` = `u`.`nome_ufficio`)) \
+                            WHERE MONTH(p.data)='{monthSelected}'\
+                            group by `p`.`data`, p.fascia_oraria\
+                            HAVING posti_disponibili<{posti_daPrenotare};")
+            busy_days = [i["data"] for i in cur.fetchall()]
+            busy_days= [i for i in busy_days if busy_days.count(i)>1]
+    
+    return busy_days
+
+def check_busyHours(
+    data: datetime.date,
+    posti_daPrenotare: int
+) -> List[str]:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"select p.fascia_oraria, `u`.`posti` - sum(`p`.`posti_prenotati`) AS `posti_disponibili` \
+                            from (`tg_bot`.`prenotazione` `p` join `tg_bot`.`ufficio` `u` on(`p`.`nome_ufficio` = `u`.`nome_ufficio`)) \
+                            WHERE p.data='{data}'\
+                            HAVING posti_disponibili<{posti_daPrenotare};")
+            busy_hours = [i["fascia_oraria"] for i in cur.fetchall()]
+    
+    return busy_hours
+
 def insert_contacts(
     telegram_id: int,
     username: str,
     contatti: str
 ):
     if check_contacts(contatti):
-        insert_whitelist(telegram_id)
+        
         # inserire query per il database
         cont=contatti.split("\n")
         query=f"INSERT INTO `utente` (`telegram_id`, `Username`, `Nome`, `Cognome`, `Recapito_telefonico`, `Mail`) VALUES ({telegram_id},'{username}', '{cont[0]}', '{cont[1]}', '{cont[2]}', '{cont[3]}')"
@@ -96,6 +160,8 @@ def insert_contacts(
             with __myconn.cursor() as cur:
                 cur.execute(query)
                 __myconn.commit()
+
+        insert_whitelist(telegram_id)
         return True
     else:
         return False
@@ -109,4 +175,3 @@ def show_contacts(
             cur.execute(query)
             contatti=cur.fetchall()[0]
             return f"{contatti['Nome']}\n{contatti['Cognome']}\n{contatti['Recapito_telefonico']}\n{contatti['Mail']}"
-        

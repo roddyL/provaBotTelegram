@@ -1,14 +1,18 @@
 import datetime as dt
 from typing import List
+from smactbot.db_functions import insert_prenotazione
 
 class Prenotazione():
 
     def __init__(self) -> None:
         self.seats = None # posti necessari per l'utente
+        self.seatsReady = False
         self.the_datetime = None # giorno prenotazione
         self.hours = None  # fascia oraria
         self.telegram_id = None # telegram_id utente
         self.chMonth=None # cambiare mese corrente
+        self.monthSelected=dt.date.today()
+        self.ready=False
 
     def __repr__(self):
         return f"\nseats: {self.seats} \ndatetime: {self.the_datetime} \nhours: {self.hours}"
@@ -19,6 +23,9 @@ class Prenotazione():
     def setSeats(self, seats: int):
         self.seats=seats
 
+    def setMonthSelected(self, monthSelected: dt.date):
+        self.monthSelected=monthSelected
+
     def setChMonth(self, chMonth: dt.date):
         self.chMonth=chMonth
 
@@ -27,14 +34,18 @@ class Prenotazione():
 
     def setHours(self, hours: str):
         self.hours=hours
-
+        
+    def setReady(self, ready: bool):
+        self.ready=True
+        
     def carica_prenotazione(self, telegram_id: str) -> bool:
-        query=""
-        pass
+        return insert_prenotazione(telegram_id, self.seats, self.the_datetime, self.hours) 
 
-    def conferma(self, telegram_id: str) -> bool:
+    def conferma(self, telegram_id: str):
         if self.seats and self.the_datetime and self.hours:    
             if self.carica_prenotazione(telegram_id):
                 return True
+
         return False
+        
     

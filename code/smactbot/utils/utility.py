@@ -124,7 +124,8 @@ def bold(
 
 def dayInfo(
     day: datetime.date,
-    holidays: List[datetime.date] = []
+    giorni_uffici_pieni: List[datetime.date],
+    holidays: List[datetime.date]=[]    
 ) -> dict:
     """dayInfo()
 
@@ -142,8 +143,6 @@ def dayInfo(
     """
 
     holidays = list(set(giorni_festivi(day.year, "PD")) | set(holidays))
-    query_uffici_pieni = ""
-    giorni_uffici_pieni = []
     giorni = []
     for i in calendar.monthcalendar(day.year, day.month):
         for j in i:
@@ -223,3 +222,9 @@ def check_contacts(contatti: str) -> bool:
                 if isMail(cont[3]):
                     return True
     return False
+
+def create_idPrenotazione(
+    the_datetime: datetime.date, 
+    n_incremental: int
+) -> str:
+    return f"{the_datetime}_{n_incremental+1}"
