@@ -5,7 +5,7 @@ from smactbot.db_functions import insert_prenotazione
 class Prenotazione():
 
     def __init__(self) -> None:
-        self.seats = None # posti necessari per l'utente
+        self.seats = 1 # posti necessari per l'utente
         self.seatsReady = False
         self.the_datetime = None # giorno prenotazione
         self.hours = None  # fascia oraria
@@ -22,6 +22,9 @@ class Prenotazione():
 
     def setSeats(self, seats: int):
         self.seats=seats
+    
+    def setSeatsReady(self, seatsReady: bool):
+        self.seatsReady=seatsReady
 
     def setMonthSelected(self, monthSelected: dt.date):
         self.monthSelected=monthSelected

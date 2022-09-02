@@ -219,10 +219,14 @@ async def button(
             print("c'è un oggetto prenotazione")
             this_prenotazione=query.data
             context.user_data['this_prenotazione']=this_prenotazione
-            if not this_prenotazione.seats:
-                context.user_data['back']="menu_prenotazioni"
-                await query.edit_message_text("Inserisci il numero di posti da prenotare: \ndigita il comando /back per tornare alla schermata precedente")
-                return SEATS
+            # if not this_prenotazione.seats:
+            #     context.user_data['back']="menu_prenotazioni"
+            #     await query.edit_message_text("Inserisci il numero di posti da prenotare: \ndigita il comando /back per tornare alla schermata precedente")
+            #     return SEATS
+            if not this_prenotazione.seatsReady:
+                interfaccia_seats = seats_interface(la_prenotazione=this_prenotazione)
+                await query.edit_message_text(text=interfaccia_seats[0], reply_markup=interfaccia_seats[1])
+                return BUTTON
             elif this_prenotazione.chMonth:
                 this_prenotazione.setMonthSelected(this_prenotazione.chMonth) 
                 this_prenotazione.setChMonth(None)

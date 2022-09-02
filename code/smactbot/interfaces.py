@@ -1,5 +1,6 @@
 # interfaces.py
 
+from cProfile import label
 import copy
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from smactbot.models.Prenotazione import Prenotazione
@@ -233,9 +234,37 @@ def endReservation_interface(
     return text_reply, reply_markup
 
 def seats_interface(
-    
+    la_prenotazione: Prenotazione
 ) -> tuple[str, InlineKeyboardMarkup]:
-    pass
+    maxPostiPrenotabili=15
+    
+    copiaMin=copy.deepcopy(la_prenotazione)
+    copiaAdd=copy.deepcopy(la_prenotazione)
+    if la_prenotazione.seats>=maxPostiPrenotabili:
+        copiaMin.setSeats(la_prenotazione.seats-1) 
+    elif la_prenotazione.seats<=1:
+        copiaAdd.setSeats(la_prenotazione.seats+1)
+    else:
+        copiaMin.setSeats(la_prenotazione.seats-1) 
+        copiaAdd.setSeats(la_prenotazione.seats+1)
+
+    la_prenotazione.setSeatsReady(True)
+
+    keyboard=[
+            InlineKeyboardButton("➖", 
+                                 callback_data=copiaMin),
+            InlineKeyboardButton("conferma", 
+                                 callback_data=la_prenotazione),
+            InlineKeyboardButton("➕", 
+                                 callback_data=copiaAdd),
+        ]
+
+    footers = [InlineKeyboardButton("⬅️ indietro",
+                                    callback_data="menu_prenotazioni")]
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=3, footer_buttons=footers))
+    text_reply=f"Seleziona posti da prenotare.\nPosti: {la_prenotazione.seats}"
+
+    return text_reply, reply_markup
 
 # def calendar_interface(
 #     firstDayMonth: datetime.date = None,

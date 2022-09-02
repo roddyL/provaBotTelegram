@@ -124,7 +124,7 @@ def check_busyDays(
         with __myconn.cursor() as cur:
             cur.execute(f"select `p`.`data` AS `data`,`u`.`posti` - sum(`p`.`posti_prenotati`) AS `posti_disponibili` \
                             from (`tg_bot`.`prenotazione` `p` join `tg_bot`.`ufficio` `u` on(`p`.`nome_ufficio` = `u`.`nome_ufficio`)) \
-                            WHERE MONTH(p.data)='{monthSelected}'\
+                            WHERE MONTH(p.data)=MONTH('{monthSelected}')\
                             group by `p`.`data`, p.fascia_oraria\
                             HAVING posti_disponibili<{posti_daPrenotare};")
             busy_days = [i["data"] for i in cur.fetchall()]
@@ -141,9 +141,10 @@ def check_busyHours(
             cur.execute(f"select p.fascia_oraria, `u`.`posti` - sum(`p`.`posti_prenotati`) AS `posti_disponibili` \
                             from (`tg_bot`.`prenotazione` `p` join `tg_bot`.`ufficio` `u` on(`p`.`nome_ufficio` = `u`.`nome_ufficio`)) \
                             WHERE p.data='{data}'\
+                            GROUP BY p.fascia_oraria\
                             HAVING posti_disponibili<{posti_daPrenotare};")
             busy_hours = [i["fascia_oraria"] for i in cur.fetchall()]
-    
+
     return busy_hours
 
 def insert_contacts(
