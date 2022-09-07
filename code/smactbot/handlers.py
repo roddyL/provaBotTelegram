@@ -217,7 +217,6 @@ async def button(
         if isinstance(query.data,Prenotazione):
             print("c'è un oggetto prenotazione")
             this_prenotazione=query.data
-            context.user_data['this_prenotazione']=this_prenotazione
 
             if not this_prenotazione.seatsReady:
                 interfaccia_seats = seats_interface(la_prenotazione=this_prenotazione)
@@ -246,6 +245,15 @@ async def button(
                 interfaccia_finePrenotazione=endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id))
                 await query.edit_message_text(text=interfaccia_finePrenotazione[0], reply_markup=interfaccia_finePrenotazione[1])
                 return BUTTON
+        elif isinstance(query.data, Gallery):
+            this_gallery=query.data
+
+            if this_gallery.size>0:
+                interfaccia_showPrenotazioni=myPrenotazioni_interface(this_gallery)
+                await query.edit_message_text(text=interfaccia_showPrenotazioni[0], reply_markup=interfaccia_showPrenotazioni[1])
+                return BUTTON
+            else:
+                return BUTTON
         elif isinstance(query.data, str): 
             if query.data == "menu_principale":
                 menu_main_interface = menu_interface_main()
@@ -260,7 +268,7 @@ async def button(
                 await query.edit_message_text("mandami la tua posizione e ti saprò dire la live demo più vicina a te! \ndigita il comando /back per tornare alla schermata precedente")
                 return LOCATION
             elif query.data == 'menu_prenotazioni':
-                menu_prenotazioni_interface = menu_interface_menu_prenotazioni()
+                menu_prenotazioni_interface = menu_interface_menu_prenotazioni(risultato_query=show_prenotazioni(telegram_id=telegram_id))
                 await query.edit_message_text(text=menu_prenotazioni_interface[0], reply_markup=menu_prenotazioni_interface[1])
                 return BUTTON
             elif query.data == "menu_profilo":

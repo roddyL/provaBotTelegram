@@ -3,6 +3,7 @@
 from cProfile import label
 import copy
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from smactbot.models.Gallery import Gallery
 from smactbot.models.Prenotazione import Prenotazione
 from smactbot.utils.utility import (
     build_menu,
@@ -33,7 +34,7 @@ def menu_profile_interface(
     keyboard = [
         InlineKeyboardButton("Modifica contatti", callback_data='menu_modificaContatti'),
         InlineKeyboardButton("Cancella profilo", callback_data='menu_cancellaProfilo'),
-        InlineKeyboardButton("⬅️ indietro",
+        InlineKeyboardButton("↩️ indietro",
                              callback_data='menu_principale')
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
@@ -41,6 +42,7 @@ def menu_profile_interface(
     return text_reply, reply_markup
 
 def menu_interface_menu_prenotazioni(
+    risultato_query: List[dict]
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard = [
         # InlineKeyboardButton("nuova prenotazione",
@@ -48,8 +50,8 @@ def menu_interface_menu_prenotazioni(
         InlineKeyboardButton("nuova prenotazione",
                              callback_data=Prenotazione()),
         InlineKeyboardButton("le mie prenotazioni",
-                             callback_data='my_prenotazione'),
-        InlineKeyboardButton("⬅️ indietro",
+                             callback_data=Gallery(the_class=Prenotazione,the_query=risultato_query)),
+        InlineKeyboardButton("↩️ indietro",
                              callback_data='menu_principale')
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
@@ -64,7 +66,7 @@ def menu_interface_menu_liveDemo(
                              callback_data='le_liveDemo'),
         InlineKeyboardButton("la live demo più vicina",
                              callback_data='nearest_liveDemo'),
-        InlineKeyboardButton("⬅️ indietro",
+        InlineKeyboardButton("↩️ indietro",
                              callback_data='menu_principale')
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
@@ -121,7 +123,7 @@ def hours_interface(
 
     copia=copy.deepcopy(la_prenotazione)
     copia.setDatetime(None)
-    footers = [InlineKeyboardButton("⬅️ indietro",
+    footers = [InlineKeyboardButton("↩️ indietro",
                                     callback_data=copia)]
 
     reply_markup = InlineKeyboardMarkup(build_menu(
@@ -183,7 +185,7 @@ def calendar_interface(
     footers.append(InlineKeyboardButton(
         "➡️", callback_data=copia))
 
-    footer_back = [InlineKeyboardButton("⬅️ indietro",
+    footer_back = [InlineKeyboardButton("↩️ indietro",
                                         callback_data=Prenotazione())]
 
     reply_markup = InlineKeyboardMarkup(build_menu(
@@ -208,7 +210,7 @@ def confirm_reservation_interface(
     keyboard = [
         InlineKeyboardButton("conferma",
                              callback_data=la_prenotazione),
-        InlineKeyboardButton("⬅️ indietro",
+        InlineKeyboardButton("↩️ indietro",
                              callback_data=copia)
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
@@ -265,9 +267,9 @@ def seats_interface(
                                  callback_data=la_prenotazione),
             InlineKeyboardButton(strMax, 
                                  callback_data=copiaAdd),
-        ]
+    ]
 
-    footers = [InlineKeyboardButton("⬅️ indietro",
+    footers = [InlineKeyboardButton("↩️ indietro",
                                     callback_data="menu_prenotazioni")]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=3, footer_buttons=footers))
     text_reply=f"Seleziona posti da prenotare.\nPosti: {la_prenotazione.seats}"
@@ -275,10 +277,37 @@ def seats_interface(
     return text_reply, reply_markup
 
 def myPrenotazioni_interface(
-
+    la_galleria: Gallery
 ) -> tuple[str, InlineKeyboardMarkup]:
-    pass
+    
+    strBack="⬅️"
+    strNext="➡️"
+    copiaBack=copy.deepcopy(la_galleria)
+    copiaNext=copy.deepcopy(la_galleria)
+    if la_galleria.pos==la_galleria.size-1:
+        strNext=" "
+        copiaBack.back()
+    if la_galleria.pos==0:
+        strBack=" "
+        copiaNext.next()
 
+    keyboard=[
+            InlineKeyboardButton(strBack, 
+                                 callback_data=copiaBack),
+            InlineKeyboardButton(strNext, 
+                                 callback_data=copiaNext),
+            InlineKeyboardButton("modifica la prenotazione",
+                                 callback_data="fashion"),
+            InlineKeyboardButton("cancella la prenotazione",
+                                 callback_data="fashion")
+    ]
+
+    footers = [InlineKeyboardButton("↩️ indietro",
+                                    callback_data="menu_prenotazioni")]
+    text_reply=la_galleria.show()
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=2, footer_buttons=footers))
+
+    return text_reply, reply_markup
 # def calendar_interface(
 #     firstDayMonth: datetime.date = None,
 #     busy_days: List[datetime.date] = None,

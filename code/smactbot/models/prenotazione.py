@@ -14,7 +14,22 @@ class Prenotazione():
         self.monthSelected=dt.date.today()
         self.ready=False
         self.idPrenotazione=None
+        self.nome_ufficio=None
+        self.timestamp=None
 
+    def costruttore(self, tupla: dict) -> None:
+        self.seats=int(tupla['posti_prenotati'])
+        self.seatsReady=True
+        self.the_datetime=tupla['data']
+        self.hours=tupla['fascia_oraria']
+        self.telegram_id = None
+        self.chMonth=None
+        self.monthSelected=dt.date.today()
+        self.ready=True
+        self.idPrenotazione=tupla['id_prenotazione']
+        self.nome_ufficio=tupla['nome_ufficio']
+        self.timestamp=tupla['timestamp']
+        return self
     def __repr__(self):
         return f"\nseats: {self.seats} \ndatetime: {self.the_datetime} \nhours: {self.hours}"
 
@@ -53,8 +68,5 @@ class Prenotazione():
         return False
 
     def showToGallery(self) -> str:
-        return f"Prenotazione: {self.idPrenotazione}\n\
-                data prenotazione: {self.the_datetime}\n\
-                nella fascia oraria: {self.hours}\n\
-                posti prenotati: {self.seats}"
-    
+        return f"Prenotazione: {self.idPrenotazione}\ndata prenotazione: {self.the_datetime}\nnella fascia oraria: {self.hours}\nposti prenotati: {self.seats}"
+        

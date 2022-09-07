@@ -182,3 +182,32 @@ def show_contacts(
             cur.execute(query)
             contatti=cur.fetchall()[0]
             return f"{contatti['Nome']}\n{contatti['Cognome']}\n{contatti['Recapito_telefonico']}\n{contatti['Mail']}"
+
+def show_prenotazioni(
+    telegram_id: int
+) -> str:
+    query=f"SELECT * \
+            FROM (\
+                SELECT id_prenotazione, nome_ufficio, posti_prenotati, 'intera giornata' as fascia_oraria, data, timestamp \
+                FROM `prenotazione` \
+                where telegram_id={telegram_id} \
+                group by id_prenotazione \
+                having count(*)>1 \
+            UNION \
+                SELECT  id_prenotazione, nome_ufficio, posti_prenotati, fascia_oraria, data, timestamp \
+                FROM `prenotazione` \
+                where telegram_id={telegram_id} \
+                group by id_prenotazione \
+                having count(*)=1) as a \
+            order by a.id_prenotazione;"
+
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(query)
+            prenotazioni=cur.fetchall()
+            if len(prenotazioni)>0:
+                return prenotazioni
+            else:
+                False
+
+    
