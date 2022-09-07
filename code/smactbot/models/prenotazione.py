@@ -13,6 +13,7 @@ class Prenotazione():
         self.chMonth=None # cambiare mese corrente
         self.monthSelected=dt.date.today()
         self.ready=False
+        self.idPrenotazione=None
 
     def __repr__(self):
         return f"\nseats: {self.seats} \ndatetime: {self.the_datetime} \nhours: {self.hours}"
@@ -50,5 +51,10 @@ class Prenotazione():
                 return True
 
         return False
-        
+
+    def showToGallery(self) -> str:
+        return f"Prenotazione: {self.idPrenotazione}\n\
+                data prenotazione: {self.the_datetime}\n\
+                nella fascia oraria: {self.hours}\n\
+                posti prenotati: {self.seats}"
     

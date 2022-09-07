@@ -205,7 +205,6 @@ async def button(
     """
     username = update.callback_query.from_user.username
     telegram_id = update.callback_query.from_user.id
-
     if telegram_id not in check_whitelist():
         await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
         context.user_data['in_conversation'] = False
@@ -213,16 +212,13 @@ async def button(
     else:
         update_session(telegram_id)
         query = update.callback_query
-        logger.info(f"conferma callback_query dell'utente {username} con id {telegram_id}: {await query.answer()} query.data:{query.data}")
+        logger.info(f"conferma callback_query dell'utente {username} con id {telegram_id}: query.data:{query.data}")
 
         if isinstance(query.data,Prenotazione):
             print("c'è un oggetto prenotazione")
             this_prenotazione=query.data
             context.user_data['this_prenotazione']=this_prenotazione
-            # if not this_prenotazione.seats:
-            #     context.user_data['back']="menu_prenotazioni"
-            #     await query.edit_message_text("Inserisci il numero di posti da prenotare: \ndigita il comando /back per tornare alla schermata precedente")
-            #     return SEATS
+
             if not this_prenotazione.seatsReady:
                 interfaccia_seats = seats_interface(la_prenotazione=this_prenotazione)
                 await query.edit_message_text(text=interfaccia_seats[0], reply_markup=interfaccia_seats[1])
@@ -271,28 +267,8 @@ async def button(
                 interfaccia_profilo=menu_profile_interface(show_contacts(telegram_id=telegram_id))
                 await query.edit_message_text(text=interfaccia_profilo[0], reply_markup=interfaccia_profilo[1])
                 return BUTTON
-            # elif query.data == 'new_prenotazione' or query.data[:7] == "chMonth":
-            #     # new_prenotazione_interface=menu_interface_new_prenotazione(query.data)
-            #     if query.data[:7] == "chMonth":
-            #         dataSelezionata = query.data.split("_")[-1]
-            #         dayInput = datetime.date(int(dataSelezionata.split(
-            #             "/")[-1]), int(dataSelezionata.split("/")[-2]), int(dataSelezionata.split("/")[-3]))
-            #     else:
-            #         dayInput = datetime.date.today()
-            #     interface_calendar = calendar_interface(dayInput)
-            #     # await query.edit_message_text(text=new_prenotazione_interface[0],reply_markup=new_prenotazione_interface[1])
-            #     await query.edit_message_text(text=interface_calendar[0], reply_markup=interface_calendar[1])
-            #     return BUTTON
-            # elif query.data == 'fashion':
-            #     await query.answer(text="is_fashion", show_alert=True, cache_time=2000)
-            #     return BUTTON
-            # elif isinstance(datetime.date(int(query.data.split("/")[-1]), int(query.data.split("/")[-2]), int(query.data.split("/")[-3])), datetime.date):
-            #     dataSelezionata = datetime.date(int(query.data.split(
-            #         "/")[-1]), int(query.data.split("/")[-2]), int(query.data.split("/")[-3]))
-            #     interfaccia_fasceOrarie=hours_interface(dataSelezionata)
-            #     await query.edit_message_text(text=interfaccia_fasceOrarie[0],reply_markup=interfaccia_fasceOrarie[1])
-            #     return BUTTON
             else:
+                await query.answer(text="Questa funzione non è stata ancora implementata", show_alert=True)
                 return BUTTON
 
 
@@ -324,32 +300,32 @@ async def send_location(
 
     return BUTTON
 
-async def send_seats(
-    update: Update,
-    context: CallbackContext
-) -> int:
+# async def send_seats(
+#     update: Update,
+#     context: CallbackContext
+# ) -> int:
     
-    username = update.message.from_user.username
-    telegram_id = update.message.from_user.id
-    seats = update.message.text
-    chatId = update.message.chat_id
+#     username = update.message.from_user.username
+#     telegram_id = update.message.from_user.id
+#     seats = update.message.text
+#     chatId = update.message.chat_id
 
-    if telegram_id not in check_whitelist():
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
-        context.user_data['in_conversation'] = False
-        return ConversationHandler.END
-    else:
-        update_session(telegram_id)
+#     if telegram_id not in check_whitelist():
+#         await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
+#         context.user_data['in_conversation'] = False
+#         return ConversationHandler.END
+#     else:
+#         update_session(telegram_id)
 
-    await update.message.delete()
-    logger.info(
-        f"Posti selezionati dall'utente {username} con id {telegram_id}: {seats}")
-    this_prenotazione=context.user_data['this_prenotazione']
-    # this_prenotazione=Prenotazione()
-    this_prenotazione.setSeats(int(seats))
-    interfaccia_calendar=calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
-    await context.bot.send_message(chat_id=chatId, text=interfaccia_calendar[0], reply_markup=interfaccia_calendar[1])
-    return BUTTON
+#     await update.message.delete()
+#     logger.info(
+#         f"Posti selezionati dall'utente {username} con id {telegram_id}: {seats}")
+#     this_prenotazione=context.user_data['this_prenotazione']
+#     # this_prenotazione=Prenotazione()
+#     this_prenotazione.setSeats(int(seats))
+#     interfaccia_calendar=calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
+#     await context.bot.send_message(chat_id=chatId, text=interfaccia_calendar[0], reply_markup=interfaccia_calendar[1])
+#     return BUTTON
 
 async def send_contacts(
     update: Update,

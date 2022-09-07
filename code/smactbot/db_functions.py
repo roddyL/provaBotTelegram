@@ -109,12 +109,18 @@ def insert_prenotazione(
                 query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
                         VALUES  ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', 'mattino', '{the_datetime}',  current_timestamp()),\
                                 ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', 'pomeriggio', '{the_datetime}',  current_timestamp())"
-            result=cur.execute(query)
-            __myconn.commit()
-            if result==0 or (result==1 and hours=="intera giornata"):
+            
+            try:
+                result=cur.execute(query)
+                if result==0 or (result==1 and hours=="intera giornata"):
+                    return False
+                else:
+                    __myconn.commit()
+                    return True    
+            except Exception as e:
+                print(e)
                 return False
-            else:
-                return True            
+                    
 
 def check_busyDays(
     posti_daPrenotare: int,

@@ -238,24 +238,32 @@ def seats_interface(
 ) -> tuple[str, InlineKeyboardMarkup]:
     maxPostiPrenotabili=15
     
+    
+    
     copiaMin=copy.deepcopy(la_prenotazione)
     copiaAdd=copy.deepcopy(la_prenotazione)
     if la_prenotazione.seats>=maxPostiPrenotabili:
-        copiaMin.setSeats(la_prenotazione.seats-1) 
+        copiaMin.setSeats(la_prenotazione.seats-1)
+        strMax=" "
+        strMin="➖"
     elif la_prenotazione.seats<=1:
         copiaAdd.setSeats(la_prenotazione.seats+1)
+        strMax="➕"
+        strMin=" "
     else:
         copiaMin.setSeats(la_prenotazione.seats-1) 
         copiaAdd.setSeats(la_prenotazione.seats+1)
+        strMax="➕"
+        strMin="➖"
 
     la_prenotazione.setSeatsReady(True)
 
     keyboard=[
-            InlineKeyboardButton("➖", 
+            InlineKeyboardButton(strMin, 
                                  callback_data=copiaMin),
             InlineKeyboardButton("conferma", 
                                  callback_data=la_prenotazione),
-            InlineKeyboardButton("➕", 
+            InlineKeyboardButton(strMax, 
                                  callback_data=copiaAdd),
         ]
 
@@ -265,6 +273,11 @@ def seats_interface(
     text_reply=f"Seleziona posti da prenotare.\nPosti: {la_prenotazione.seats}"
 
     return text_reply, reply_markup
+
+def myPrenotazioni_interface(
+
+) -> tuple[str, InlineKeyboardMarkup]:
+    pass
 
 # def calendar_interface(
 #     firstDayMonth: datetime.date = None,
