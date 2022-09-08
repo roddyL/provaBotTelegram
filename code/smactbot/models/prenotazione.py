@@ -1,6 +1,6 @@
 import datetime as dt
 from typing import List
-from smactbot.db_functions import insert_prenotazione
+from smactbot.db_functions import insert_prenotazione, delete_prenotazione
 
 class Prenotazione():
 
@@ -16,8 +16,9 @@ class Prenotazione():
         self.idPrenotazione=None
         self.nome_ufficio=None
         self.timestamp=None
+        self.isUpdating=None
 
-    def costruttore(self, tupla: dict) -> None:
+    def costruttore(self, tupla: dict) -> object:
         self.seats=int(tupla['posti_prenotati'])
         self.seatsReady=True
         self.the_datetime=tupla['data']
@@ -30,6 +31,7 @@ class Prenotazione():
         self.nome_ufficio=tupla['nome_ufficio']
         self.timestamp=tupla['timestamp']
         return self
+
     def __repr__(self):
         return f"\nseats: {self.seats} \ndatetime: {self.the_datetime} \nhours: {self.hours}"
 
@@ -56,12 +58,22 @@ class Prenotazione():
         
     def setReady(self, ready: bool):
         self.ready=True
-        
+    
+    def setUpdating(self, isUpdating: bool):
+        self.isUpdating=True
+
     def carica_prenotazione(self, telegram_id: str) -> bool:
         return insert_prenotazione(telegram_id, self.seats, self.the_datetime, self.hours) 
 
-    def conferma(self, telegram_id: str):
+    def conferma(self, telegram_id: str) -> bool:
         if self.seats and self.the_datetime and self.hours:    
+            if self.carica_prenotazione(telegram_id):
+                return True
+
+        return False
+    
+    def aggiorna(self, telegram_id: str) -> bool:
+        if self.seats and self.the_datetime and self.hours:
             if self.carica_prenotazione(telegram_id):
                 return True
 
@@ -70,3 +82,6 @@ class Prenotazione():
     def showToGallery(self) -> str:
         return f"Prenotazione: {self.idPrenotazione}\ndata prenotazione: {self.the_datetime}\nnella fascia oraria: {self.hours}\nposti prenotati: {self.seats}"
         
+    def deletePrenotazione(self):
+        return delete_prenotazione(self.idPrenotazione)
+

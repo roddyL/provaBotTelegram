@@ -211,4 +211,15 @@ def show_prenotazioni(
             else:
                 False
 
+def delete_prenotazione(
+    id_prenotazione: str
+) -> bool:
+    query=f"delete from prenotazione where id_prenotazione='{id_prenotazione}'"
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            if cur.execute(query):
+                __myconn.commit()
+                return True
+            else:
+                return False
     

@@ -238,20 +238,33 @@ async def button(
                 await query.edit_message_text(text=interfaccia_hours[0], reply_markup=interfaccia_hours[1])
                 return BUTTON
             elif not this_prenotazione.ready:
-                interfaccia_conferma= confirm_reservation_interface(telegram_id=telegram_id, la_prenotazione=this_prenotazione)
-                await query.edit_message_text(text=interfaccia_conferma[0], reply_markup=interfaccia_conferma[1])
-                return BUTTON
+                if not this_prenotazione.isUpdating:
+                    interfaccia_conferma= confirm_reservation_interface(telegram_id=telegram_id, la_prenotazione=this_prenotazione)
+                    await query.edit_message_text(text=interfaccia_conferma[0], reply_markup=interfaccia_conferma[1])
+                    return BUTTON
+                else:
+                    pass
             else:
-                interfaccia_finePrenotazione=endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id))
+                interfaccia_finePrenotazione=endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id),risultato_query=show_prenotazioni(telegram_id=telegram_id))
                 await query.edit_message_text(text=interfaccia_finePrenotazione[0], reply_markup=interfaccia_finePrenotazione[1])
                 return BUTTON
         elif isinstance(query.data, Gallery):
             this_gallery=query.data
 
             if this_gallery.size>0:
-                interfaccia_showPrenotazioni=myPrenotazioni_interface(this_gallery)
-                await query.edit_message_text(text=interfaccia_showPrenotazioni[0], reply_markup=interfaccia_showPrenotazioni[1])
-                return BUTTON
+                if not this_gallery.isDeleting:
+                    interfaccia_showPrenotazioni=myPrenotazioni_interface(this_gallery)
+                    await query.edit_message_text(text=interfaccia_showPrenotazioni[0], reply_markup=interfaccia_showPrenotazioni[1])
+                    return BUTTON
+                else:
+                    if not this_gallery.isReadyDelete:
+                        interfaccia_deletePrenotazioni=delete_prenotazioni_interface(this_gallery)
+                        await query.edit_message_text(text=interfaccia_deletePrenotazioni[0], reply_markup=interfaccia_deletePrenotazioni[1])
+                        return BUTTON
+                    else:
+                        interfaccia_confermaDeletePrenotazioni=deleteConfirm_prenotazioni_interface(this_gallery)
+                        await query.edit_message_text(text=interfaccia_confermaDeletePrenotazioni[0], reply_markup=interfaccia_confermaDeletePrenotazioni[1])
+                        return BUTTON
             else:
                 return BUTTON
         elif isinstance(query.data, str): 

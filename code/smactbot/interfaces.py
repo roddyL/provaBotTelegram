@@ -1,6 +1,7 @@
 # interfaces.py
 
 from cProfile import label
+from cgitb import text
 import copy
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from smactbot.models.Gallery import Gallery
@@ -222,20 +223,24 @@ def confirm_reservation_interface(
     return text_reply, reply_markup
 
 def endReservation_interface(
-    buonaRiuscita: bool    
+    buonaRiuscita: bool,
+    risultato_query: List[dict]
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard = [
         InlineKeyboardButton("Nuova prenotazione",
-                             callback_data=Prenotazione()),
-        InlineKeyboardButton("menu principale 🏠",
-                             callback_data='menu_principale')
-    ]
-    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+                            callback_data=Prenotazione())]
 
     if buonaRiuscita:
         text_reply = f"prenotazione confermata!\nOra scegli se effettuare una nuova prenotazione o ritornare al menu principale!"
+        keyboard.append(InlineKeyboardButton("Le mie prenotazioni",
+                            callback_data=Gallery(the_class=Prenotazione,the_query=risultato_query)))
     else:
         text_reply = f"la prenotazione non ha avuto successo\nEffettua per piacere una nuova prenotazione oppure torna al menu principale"
+
+    keyboard.append(InlineKeyboardButton("menu principale 🏠",
+                            callback_data='menu_principale'))
+
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
 
     return text_reply, reply_markup
 
@@ -288,15 +293,16 @@ def myPrenotazioni_interface(
     strNext="➡️"
     copiaBack=copy.deepcopy(la_galleria)
     copiaNext=copy.deepcopy(la_galleria)
+    copiaDelete=copy.deepcopy(la_galleria)
+    copiaDelete.isDeletingChange()
+    
+    if la_galleria.pos==0:
+        strBack=" "
     if la_galleria.pos==la_galleria.size-1:
         strNext=" "
-        copiaBack.back()
-    elif la_galleria.pos==0:
-        strBack=" "
-        copiaNext.next()
-    else:
-        copiaBack.back()
-        copiaNext.next()
+
+    copiaBack.back()
+    copiaNext.next()
 
 
     keyboard=[
@@ -307,7 +313,7 @@ def myPrenotazioni_interface(
             InlineKeyboardButton("modifica",
                                  callback_data="fashion"),
             InlineKeyboardButton("cancella",
-                                 callback_data="fashion")
+                                 callback_data=copiaDelete)
     ]
 
     footers = [InlineKeyboardButton("↩️ indietro",
@@ -316,6 +322,53 @@ def myPrenotazioni_interface(
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=2, footer_buttons=footers))
 
     return text_reply, reply_markup
+
+def delete_prenotazioni_interface(
+    la_galleria: Gallery
+) -> tuple[str, InlineKeyboardMarkup]:
+    
+    copiaAnnulla=copy.deepcopy(la_galleria)
+    copiaConferma=copy.deepcopy(la_galleria)
+    copiaAnnulla.isDeletingChange()
+    copiaConferma.isReadyDeleteChange()
+
+    keyboard=[
+            InlineKeyboardButton("annulla", 
+                                 callback_data=copiaAnnulla),
+            InlineKeyboardButton("conferma", 
+                                 callback_data=copiaConferma)
+    ]
+
+    reply_markup=InlineKeyboardMarkup(build_menu(keyboard, n_cols=2))
+
+    text_reply=f"{la_galleria.show()}\nSei sicuro di cancellare questa prenotazione?"
+    return text_reply, reply_markup
+
+def deleteConfirm_prenotazioni_interface(
+    la_galleria: Gallery
+) -> tuple[str, InlineKeyboardMarkup]:
+    
+    keyboard=[]
+
+    if la_galleria.delete():
+        text_reply="Prenotazione cancellata con successo!\nOra scegli se tornare alle tue prenotazioni o al menu"
+    else:
+        text_reply="Purtroppo non siamo riusciti a cancellare la tua prenotazione, contatta la segreteria per ottenere ulteriore supporto"
+    
+    if la_galleria.size>0:
+        keyboard.append(InlineKeyboardButton("le mie prenotazioni", 
+                                    callback_data=la_galleria))
+
+    keyboard.append(InlineKeyboardButton("menu principale", 
+                                callback_data="menu_principale"))
+    
+
+    reply_markup=InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+
+    return text_reply, reply_markup
+
+
+
 # def calendar_interface(
 #     firstDayMonth: datetime.date = None,
 #     busy_days: List[datetime.date] = None,
