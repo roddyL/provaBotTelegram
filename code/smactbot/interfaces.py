@@ -44,16 +44,20 @@ def menu_profile_interface(
 def menu_interface_menu_prenotazioni(
     risultato_query: List[dict]
 ) -> tuple[str, InlineKeyboardMarkup]:
+
     keyboard = [
-        # InlineKeyboardButton("nuova prenotazione",
-        #                      callback_data='new_prenotazione'),
         InlineKeyboardButton("nuova prenotazione",
                              callback_data=Prenotazione()),
-        InlineKeyboardButton("le mie prenotazioni",
-                             callback_data=Gallery(the_class=Prenotazione,the_query=risultato_query)),
-        InlineKeyboardButton("↩️ indietro",
-                             callback_data='menu_principale')
     ]
+
+    if risultato_query:
+        keyboard.append(InlineKeyboardButton("le mie prenotazioni",
+                         callback_data=Gallery(the_class=Prenotazione,the_query=risultato_query)))
+
+    keyboard.append(InlineKeyboardButton("↩️ indietro",
+                             callback_data='menu_principale'))
+        
+
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
     text_reply = f"Interfaccia di prenotazione"
     return text_reply, reply_markup
@@ -287,18 +291,22 @@ def myPrenotazioni_interface(
     if la_galleria.pos==la_galleria.size-1:
         strNext=" "
         copiaBack.back()
-    if la_galleria.pos==0:
+    elif la_galleria.pos==0:
         strBack=" "
         copiaNext.next()
+    else:
+        copiaBack.back()
+        copiaNext.next()
+
 
     keyboard=[
             InlineKeyboardButton(strBack, 
                                  callback_data=copiaBack),
             InlineKeyboardButton(strNext, 
                                  callback_data=copiaNext),
-            InlineKeyboardButton("modifica la prenotazione",
+            InlineKeyboardButton("modifica",
                                  callback_data="fashion"),
-            InlineKeyboardButton("cancella la prenotazione",
+            InlineKeyboardButton("cancella",
                                  callback_data="fashion")
     ]
 

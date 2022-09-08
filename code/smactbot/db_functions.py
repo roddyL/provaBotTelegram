@@ -199,6 +199,7 @@ def show_prenotazioni(
                 where telegram_id={telegram_id} \
                 group by id_prenotazione \
                 having count(*)=1) as a \
+            where data>={datetime.date.today()}\
             order by a.id_prenotazione;"
 
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
