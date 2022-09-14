@@ -20,9 +20,9 @@ from typing import List
 def menu_interface_main(
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard = [
-        InlineKeyboardButton("prenotazioni 📅", callback_data='menu_prenotazioni'),
+        InlineKeyboardButton("uffici 🖥️", callback_data='menu_prenotazioni'),
         InlineKeyboardButton("le live demo 🏭", callback_data='menu_liveDemo'),
-        InlineKeyboardButton("eventi 🖥️", callback_data='menu_eventi'),
+        InlineKeyboardButton("eventi 📅", callback_data='menu_eventi'),
         InlineKeyboardButton("il mio profilo 👤", callback_data='menu_profilo'),
     ]
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
@@ -310,8 +310,8 @@ def myPrenotazioni_interface(
                                  callback_data=copiaBack),
             InlineKeyboardButton(strNext, 
                                  callback_data=copiaNext),
-            InlineKeyboardButton("modifica",
-                                 callback_data="fashion"),
+            # InlineKeyboardButton("modifica",
+            #                      callback_data="fashion"),
             InlineKeyboardButton("cancella",
                                  callback_data=copiaDelete)
     ]

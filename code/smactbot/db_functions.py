@@ -88,7 +88,8 @@ def insert_prenotazione(
     telegram_id: int, 
     seats: int, 
     the_datetime: datetime.date, 
-    hours: str
+    hours: str,
+    nome_ufficio: str = 'liveDemo+9' 
 ) -> bool:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
@@ -104,11 +105,11 @@ def insert_prenotazione(
             idPrenotazione=create_idPrenotazione(the_datetime=the_datetime, n_incremental=n_incremental)
             if not hours=="intera giornata":
                 query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
-                        VALUES  ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', '{hours}', '{the_datetime}',  current_timestamp())"
+                        VALUES  ('{idPrenotazione}', '{telegram_id}', '{nome_ufficio}', '{seats}', '{hours}', '{the_datetime}',  current_timestamp())"
             else:
                 query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
-                        VALUES  ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', 'mattino', '{the_datetime}',  current_timestamp()),\
-                                ('{idPrenotazione}', '{telegram_id}', 'liveDemo+9', '{seats}', 'pomeriggio', '{the_datetime}',  current_timestamp())"
+                        VALUES  ('{idPrenotazione}', '{telegram_id}', '{nome_ufficio}', '{seats}', 'mattino', '{the_datetime}',  current_timestamp()),\
+                                ('{idPrenotazione}', '{telegram_id}', '{nome_ufficio}', '{seats}', 'pomeriggio', '{the_datetime}',  current_timestamp())"
             
             try:
                 result=cur.execute(query)

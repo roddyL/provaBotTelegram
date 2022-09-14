@@ -17,7 +17,6 @@ from smactbot.interfaces import *
 
 # functions handlers
 
-
 async def start(
     update: Update,
     context: CallbackContext
@@ -219,78 +218,55 @@ async def button(
             this_prenotazione=query.data
 
             if not this_prenotazione.seatsReady:
-                interfaccia_seats = seats_interface(la_prenotazione=this_prenotazione)
-                await query.edit_message_text(text=interfaccia_seats[0], reply_markup=interfaccia_seats[1])
-                return BUTTON
+                interfaccia = seats_interface(la_prenotazione=this_prenotazione)
             elif this_prenotazione.chMonth:
                 this_prenotazione.setMonthSelected(this_prenotazione.chMonth) 
                 this_prenotazione.setChMonth(None)
-                interface_calendar = calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
-                await query.edit_message_text(text=interface_calendar[0], reply_markup=interface_calendar[1])
-                return BUTTON
+                interfaccia = calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
             elif not this_prenotazione.the_datetime:
-                context.user_data['back']=SEATS
-                interface_calendar = calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
-                await query.edit_message_text(text=interface_calendar[0], reply_markup=interface_calendar[1])
-                return BUTTON
+                interfaccia = calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
             elif not this_prenotazione.hours:
-                interfaccia_hours = hours_interface(la_prenotazione=this_prenotazione, busy_hours=check_busyHours(data=this_prenotazione.the_datetime, posti_daPrenotare=this_prenotazione.seats))
-                await query.edit_message_text(text=interfaccia_hours[0], reply_markup=interfaccia_hours[1])
-                return BUTTON
+                interfaccia = hours_interface(la_prenotazione=this_prenotazione, busy_hours=check_busyHours(data=this_prenotazione.the_datetime, posti_daPrenotare=this_prenotazione.seats))
             elif not this_prenotazione.ready:
                 if not this_prenotazione.isUpdating:
-                    interfaccia_conferma= confirm_reservation_interface(telegram_id=telegram_id, la_prenotazione=this_prenotazione)
-                    await query.edit_message_text(text=interfaccia_conferma[0], reply_markup=interfaccia_conferma[1])
-                    return BUTTON
+                    interfaccia= confirm_reservation_interface(telegram_id=telegram_id, la_prenotazione=this_prenotazione)
                 else:
                     pass
             else:
-                interfaccia_finePrenotazione=endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id),risultato_query=show_prenotazioni(telegram_id=telegram_id))
-                await query.edit_message_text(text=interfaccia_finePrenotazione[0], reply_markup=interfaccia_finePrenotazione[1])
-                return BUTTON
+                interfaccia=endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id),risultato_query=show_prenotazioni(telegram_id=telegram_id))
+        
         elif isinstance(query.data, Gallery):
             this_gallery=query.data
 
             if this_gallery.size>0:
                 if not this_gallery.isDeleting:
-                    interfaccia_showPrenotazioni=myPrenotazioni_interface(this_gallery)
-                    await query.edit_message_text(text=interfaccia_showPrenotazioni[0], reply_markup=interfaccia_showPrenotazioni[1])
-                    return BUTTON
+                    interfaccia=myPrenotazioni_interface(this_gallery)
                 else:
                     if not this_gallery.isReadyDelete:
-                        interfaccia_deletePrenotazioni=delete_prenotazioni_interface(this_gallery)
-                        await query.edit_message_text(text=interfaccia_deletePrenotazioni[0], reply_markup=interfaccia_deletePrenotazioni[1])
-                        return BUTTON
+                        interfaccia=delete_prenotazioni_interface(this_gallery)
                     else:
-                        interfaccia_confermaDeletePrenotazioni=deleteConfirm_prenotazioni_interface(this_gallery)
-                        await query.edit_message_text(text=interfaccia_confermaDeletePrenotazioni[0], reply_markup=interfaccia_confermaDeletePrenotazioni[1])
-                        return BUTTON
+                        interfaccia=deleteConfirm_prenotazioni_interface(this_gallery)
             else:
                 return BUTTON
         elif isinstance(query.data, str): 
             if query.data == "menu_principale":
-                menu_main_interface = menu_interface_main()
-                await query.edit_message_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
-                return BUTTON
+                interfaccia = menu_interface_main()
             elif query.data == 'menu_liveDemo':
-                menu_liveDemo_interface = menu_interface_menu_liveDemo()
-                await query.edit_message_text(menu_liveDemo_interface[0], reply_markup=menu_liveDemo_interface[1])
-                return BUTTON
+                interfaccia = menu_interface_menu_liveDemo()
             elif query.data == 'nearest_liveDemo':
                 context.user_data['back']="menu_liveDemo"
                 await query.edit_message_text("mandami la tua posizione e ti saprò dire la live demo più vicina a te! \ndigita il comando /back per tornare alla schermata precedente")
                 return LOCATION
             elif query.data == 'menu_prenotazioni':
-                menu_prenotazioni_interface = menu_interface_menu_prenotazioni(risultato_query=show_prenotazioni(telegram_id=telegram_id))
-                await query.edit_message_text(text=menu_prenotazioni_interface[0], reply_markup=menu_prenotazioni_interface[1])
-                return BUTTON
+                interfaccia = menu_interface_menu_prenotazioni(risultato_query=show_prenotazioni(telegram_id=telegram_id))
             elif query.data == "menu_profilo":
-                interfaccia_profilo=menu_profile_interface(show_contacts(telegram_id=telegram_id))
-                await query.edit_message_text(text=interfaccia_profilo[0], reply_markup=interfaccia_profilo[1])
-                return BUTTON
+                interfaccia=menu_profile_interface(show_contacts(telegram_id=telegram_id))
             else:
                 await query.answer(text="Questa funzione non è stata ancora implementata", show_alert=True)
                 return BUTTON
+            
+        await query.edit_message_text(text=interfaccia[0], reply_markup=interfaccia[1])
+        return BUTTON
 
 
 async def send_location(
@@ -320,33 +296,6 @@ async def send_location(
     await context.bot.send_message(chat_id=chatId, text=location_interface[0], reply_markup=location_interface[1])
 
     return BUTTON
-
-# async def send_seats(
-#     update: Update,
-#     context: CallbackContext
-# ) -> int:
-    
-#     username = update.message.from_user.username
-#     telegram_id = update.message.from_user.id
-#     seats = update.message.text
-#     chatId = update.message.chat_id
-
-#     if telegram_id not in check_whitelist():
-#         await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
-#         context.user_data['in_conversation'] = False
-#         return ConversationHandler.END
-#     else:
-#         update_session(telegram_id)
-
-#     await update.message.delete()
-#     logger.info(
-#         f"Posti selezionati dall'utente {username} con id {telegram_id}: {seats}")
-#     this_prenotazione=context.user_data['this_prenotazione']
-#     # this_prenotazione=Prenotazione()
-#     this_prenotazione.setSeats(int(seats))
-#     interfaccia_calendar=calendar_interface(firstDayMonth=this_prenotazione.monthSelected, la_prenotazione=this_prenotazione, giorni_uffici_pieni=check_busyDays(posti_daPrenotare=this_prenotazione.seats, monthSelected=this_prenotazione.monthSelected))
-#     await context.bot.send_message(chat_id=chatId, text=interfaccia_calendar[0], reply_markup=interfaccia_calendar[1])
-#     return BUTTON
 
 async def send_contacts(
     update: Update,
