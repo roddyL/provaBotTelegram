@@ -18,15 +18,23 @@ from typing import List
 # interfacce
 
 def menu_interface_main(
+    autorizzazioni: dict
 ) -> tuple[str, InlineKeyboardMarkup]:
-    keyboard = [
-        InlineKeyboardButton("uffici 🖥️", callback_data='menu_prenotazioni'),
-        InlineKeyboardButton("le live demo 🏭", callback_data='menu_liveDemo'),
-        InlineKeyboardButton("eventi 📅", callback_data='menu_eventi'),
-        InlineKeyboardButton("il mio profilo 👤", callback_data='menu_profilo'),
-    ]
+    keyboard=[]
+
+    if autorizzazioni["can_ufficio"]:
+        keyboard.append(InlineKeyboardButton("uffici 🖥️", callback_data='menu_prenotazioni'))
+    if autorizzazioni["can_livedemo"]:
+        keyboard.append(InlineKeyboardButton("le live demo 🏭", callback_data='menu_liveDemo'))
+    if autorizzazioni["can_evento"]:
+        keyboard.append(InlineKeyboardButton("eventi 📅", callback_data='menu_eventi'))
+    if autorizzazioni["can_contatto"]:
+        keyboard.append(InlineKeyboardButton("il mio profilo 👤", callback_data='menu_profilo'))
+    if autorizzazioni["nome_ruolo"]=="guest":
+        keyboard.append(InlineKeyboardButton("login 👤", callback_data='login'))
+
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
-    text_reply = f"Schermata principale"
+    text_reply = f"--Schermata principale--\nSei un utente {autorizzazioni['nome_ruolo']} perciò potrai utilizzare solamente queste funzionalità:"
     return text_reply, reply_markup
 
 def menu_profile_interface(
@@ -173,28 +181,29 @@ def calendar_interface(
     header = [InlineKeyboardButton(
         f"{mese} {anno}", callback_data=la_prenotazione)]
     if giorno_datetime.month == datetime.date.today().month:
-        footers = []
+        header.insert(0,InlineKeyboardButton(
+            " ", callback_data=la_prenotazione))
     else:
         the_previous_month = previous_month(
             giorno_datetime.month, giorno_datetime.year)
         copia=copy.deepcopy(la_prenotazione)
         copia.setChMonth(datetime.date(day=int(the_previous_month.split(
             "/")[0]), month=int(the_previous_month.split("/")[1]), year=int(the_previous_month.split("/")[2])))
-        footers = [InlineKeyboardButton(
-            "⬅️", callback_data=copia)]
+        header.insert(0,InlineKeyboardButton(
+            "⬅️", callback_data=copia))
 
     the_next_month = next_month(giorno_datetime.month, giorno_datetime.year)
     copia=copy.deepcopy(la_prenotazione)
     copia.setChMonth(datetime.date(day=int(the_next_month.split(
         "/")[0]), month=int(the_next_month.split("/")[1]), year=int(the_next_month.split("/")[2])))
-    footers.append(InlineKeyboardButton(
+    header.append(InlineKeyboardButton(
         "➡️", callback_data=copia))
 
-    footer_back = [InlineKeyboardButton("↩️ indietro",
+    footers= [InlineKeyboardButton("↩️ indietro",
                                         callback_data=Prenotazione())]
 
     reply_markup = InlineKeyboardMarkup(build_menu(
-        keyboard, n_cols=7, header_buttons=header, footer_buttons=footers, footer_footer=footer_back))
+        keyboard, n_cols=7, header_buttons=header, footer_buttons=footers))
 
     text_reply = f"seleziona data"
     return text_reply, reply_markup
@@ -245,9 +254,13 @@ def endReservation_interface(
     return text_reply, reply_markup
 
 def seats_interface(
-    la_prenotazione: Prenotazione
+    la_prenotazione: Prenotazione,
+    autorizzazioni: dict
 ) -> tuple[str, InlineKeyboardMarkup]:
-    maxPostiPrenotabili=15
+    maxPostiUfficio=20
+    maxPostiPrenotabili=autorizzazioni["max_postiprenot"]
+    if maxPostiPrenotabili==-1:
+        maxPostiPrenotabili=maxPostiUfficio
     
     
     

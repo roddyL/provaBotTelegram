@@ -154,6 +154,29 @@ def check_busyHours(
 
     return busy_hours
 
+def return_auth(telegram_id) -> dict:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"select r.nome_ruolo, r.can_ufficio, r.can_evento, r.can_livedemo, r.can_contatto \
+                from ruolo as r inner join utente as u on r.nome_ruolo=u.nome_ruolo \
+                where u.telegram_id={telegram_id}")
+        return cur.fetchone()
+
+def insert_firstStart(
+    telegram_id: int,
+    username: str=None
+):
+        query=f"INSERT INTO `utente` (`telegram_id`, `Username`,`nome_ruolo`) VALUES ({telegram_id},'{username}','guest')"
+        with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+            with __myconn.cursor() as cur:
+                try:
+                    cur.execute(query)
+                except Exception as e:
+                    return     
+                
+                __myconn.commit()
+                
+
 def insert_contacts(
     telegram_id: int,
     username: str,
@@ -163,17 +186,28 @@ def insert_contacts(
         
         # inserire query per il database
         cont=contatti.split("\n")
-        query=f"INSERT INTO `utente` (`telegram_id`, `Username`, `Nome`, `Cognome`, `Recapito_telefonico`, `Mail`) VALUES ({telegram_id},'{username}', '{cont[0]}', '{cont[1]}', '{cont[2]}', '{cont[3]}')"
+        query=f"UPDATE `utente` SET `Nome`='{cont[0]}', `Cognome`='{cont[1]}', `Recapito_telefonico`='{cont[2]}', `Mail`='{cont[3]}' WHERE `telegram_id`={telegram_id}"
         with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
             with __myconn.cursor() as cur:
                 cur.execute(query)
                 __myconn.commit()
-
+        
         insert_whitelist(telegram_id)
+
         return True
     else:
         return False
     
+def change_role(
+    telegram_id: int,
+    nome_ruolo: str
+):
+    query=f"UPDATE `utente` SET `nome_ruolo`='{nome_ruolo}' WHERE `telegram_id`={telegram_id}"
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(query)
+            __myconn.commit()
+
 def show_contacts(
     telegram_id: int
 ) -> str:

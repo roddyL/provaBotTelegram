@@ -1,7 +1,5 @@
 # handlers.py
 
-import telnetlib
-from tkinter import Button
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
 from smactbot.models import Prenotazione
@@ -30,14 +28,25 @@ async def start(
     Returns:
         _type_: None
     """
+    username = update.message.from_user.username
+    telegram_id=update.message.from_user.id
+    
     if "in_conversation" in context.user_data.keys():
         if context.user_data['in_conversation'] == True:
             await update.message.reply_text("Ehi! sei ancora loggato, se vuoi riavviare il bot effettua prima il /logout! o per un semplice riavvio scrivi /cancel !")
-            return None
+            return
 
     logger.info("Utente \'%s\' con id \'%s\' ha avviato la conversazione %s.",
                 update.message.from_user.username, update.message.from_user.id, update.message.chat_id)
-    await update.message.reply_text("Ciao, vi servirò fino alla fine \nDigita il comando /login per utilizzare il bot!\nSe necessario utilizza il comando /cancel per ritornare a questa schermata!")
+    if username:
+        insert_firstStart(telegram_id=telegram_id, username=username)
+    else:
+        insert_firstStart(telegram_id=telegram_id)
+        
+    await update.message.reply_text("Ciao, vi servirò fino alla fine \nPremi il tasto login per utilizzare il bot con tutte le sue funzionalità!")
+    menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
+    await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
+    return BUTTON
 
 
 async def fallback(
@@ -150,20 +159,24 @@ async def login_check(
             # fai partire la richiesta dei contatti
             await context.bot.send_message(chat_id=chatId, 
                                             text="Password corretta!\n Ora inserisci i tuoi contatti in questo modo:\nNome\nCognome\nnumero di telefono\nla tua mail")
+            change_role(telegram_id=telegram_id, nome_ruolo="admin")
             return CONTACTS
         else:
             update_session(telegram_id=telegram_id)
             logger.info(
                 "Log in dell'utente \'%s\' con id \'%s\' riuscito. Update della sessione.", username, telegram_id)
         await context.bot.send_message(chat_id=chatId, 
-                                        text="Password corretta!\n ora puoi accedere alle funzioni del bot!\nDigita il comando /menu per accedere al menu")
-        return MENU
+                                        text="Password corretta!\n ora puoi accedere alle funzioni del bot!")
+        menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
+        await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
+        return BUTTON
+        # return MENU
     else:
         logger.info(
             "Log in dell'utente \'%s\' con id \'%s\' non riuscito. Password usata: %s", username, telegram_id, passInserita)
         return LOGIN_CHECK
 
-@session_check
+# @session_check
 async def menu(
     update: Update,
     context: CallbackContext
@@ -177,11 +190,12 @@ async def menu(
     Returns:
         int: prossima schermata
     """
-    menu_main_interface = menu_interface_main()
+    telegram_id = update.message.from_user.id
+    menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
     await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
     return BUTTON
 
-@session_check
+# @session_check
 async def button(
     update: Update,
     context: CallbackContext
@@ -198,6 +212,7 @@ async def button(
     username = update.callback_query.from_user.username
     telegram_id = update.callback_query.from_user.id
     query = update.callback_query
+    chat_id=query.message.chat_id
     logger.info(f"conferma callback_query dell'utente {username} con id {telegram_id}: query.data:{query.data}")
 
     if isinstance(query.data,Prenotazione):
@@ -245,8 +260,18 @@ async def button(
         else:
             return BUTTON
     elif isinstance(query.data, str): 
-        if query.data == "menu_principale":
-            interfaccia = menu_interface_main()
+        if query.data=="login":
+            context.user_data['in_conversation'] = True
+            logger.info(
+                "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
+            
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="inserisci la password d'accesso: "
+                )
+            return LOGIN_CHECK
+        elif query.data == "menu_principale":
+            interfaccia = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
         elif query.data == 'menu_liveDemo':
             interfaccia = menu_interface_menu_liveDemo()
         elif query.data == 'nearest_liveDemo':
@@ -264,7 +289,7 @@ async def button(
     await query.edit_message_text(text=interfaccia[0], reply_markup=interfaccia[1])
     return BUTTON
 
-@session_check
+# @session_check
 async def send_location(
     update: Update,
     context: CallbackContext
@@ -273,7 +298,7 @@ async def send_location(
     telegram_id = update.message.from_user.id
     posizione = update.message.location
     chatId = update.message.chat_id
-
+    
     await update.message.delete()
     logger.info(
         f"Posizione dell'utente {username} con id {telegram_id}: longitudine: {posizione.latitude} latitudine:{posizione.longitude}")
@@ -304,8 +329,10 @@ async def send_contacts(
         f"I contatti dell'utente {username} con id {telegram_id}: {contatti}")
 
     if insert_contacts(telegram_id=telegram_id, username=username, contatti=contatti):
-        await context.bot.send_message(chat_id=chatId, text="Hai registrato i tuoi contatti!\nOra puoi accedere alle funzioni del bot!\nDigita il comando /menu per accedere al menu")
-        return MENU
+        await context.bot.send_message(chat_id=chatId, text="Hai registrato i tuoi contatti!\nOra puoi accedere alle funzioni del bot!")
+        menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
+        await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
+        return BUTTON
     else:
         await context.bot.send_message(chat_id=chatId, text="Attenzione, hai sbagliato ad inserire i contatti correttamente.\nTi invitiamo a rispettare le regole perfettamente")
         return CONTACTS

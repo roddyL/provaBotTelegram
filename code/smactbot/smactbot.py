@@ -17,9 +17,10 @@ application = Application.builder().token(
 
 
 # handler
-start_handler = CommandHandler('start', start)
+# start_handler = CommandHandler('start', start)
 login_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler("login", login)],
+    # entry_points=[CommandHandler('start', start),CommandHandler("login", login)],
+    entry_points=[CommandHandler('start', start)],
     states={
         LOGIN_CHECK: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_check)],
         CONTACTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_contacts)],
@@ -32,5 +33,5 @@ login_conv_handler = ConversationHandler(
 )
 
 # dispatcher add handler
-application.add_handler(start_handler)
+# application.add_handler(start_handler)
 application.add_handler(login_conv_handler)
