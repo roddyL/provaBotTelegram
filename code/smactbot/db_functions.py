@@ -154,13 +154,22 @@ def check_busyHours(
 
     return busy_hours
 
-def return_auth(telegram_id) -> dict:
+def return_auth(telegram_id) -> int:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select r.nome_ruolo, r.can_ufficio, r.can_evento, r.can_livedemo, r.can_contatto \
+            cur.execute(f"select r.livello_permesso \
                 from ruolo as r inner join utente as u on r.nome_ruolo=u.nome_ruolo \
                 where u.telegram_id={telegram_id}")
-        return cur.fetchone()
+        return cur.fetchone()["livello_permesso"]
+
+def auth(nome_ruolo) -> int:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"select r.livello_permesso \
+                from ruolo as r \
+                where nome_ruolo='{nome_ruolo}'")
+        return cur.fetchone()["livello_permesso"]
+
 
 def insert_firstStart(
     telegram_id: int,
