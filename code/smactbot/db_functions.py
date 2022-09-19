@@ -25,7 +25,8 @@ def insert_whitelist(
             __myconn.commit()
 
 def check_whitelist(
-    already_logged: bool = False
+    telegram_id: int
+    # already_logged: bool = False
 ) -> List[str]:
     """check_whitelist()
 
@@ -40,17 +41,21 @@ def check_whitelist(
     Returns:
         List[str]: utenti presenti nella whitelist
     """
-    if already_logged:
-        logged = 0
-    else:
-        logged = 1
+    # if already_logged:
+    #     logged = 0
+    # else:
+    #     logged = 1
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         # update whitelist da database
         with __myconn.cursor() as cur:
-            cur.execute(f"select * from whitelist where is_logged={logged}")
-            whitelist = [i["telegram_id"] for i in cur.fetchall()]
+            # cur.execute(f"select * from whitelist where is_logged={logged}")
+            query=f"select is_logged from whitelist where telegram_id={telegram_id}"
+            is_logged=None
+            if cur.execute(query):
+            # whitelist = [i["telegram_id"] for i in cur.fetchall()]
+                is_logged=cur.fetchone()["is_logged"]
 
-    return whitelist
+    return is_logged
 
 def update_session(
     telegram_id: int
@@ -154,13 +159,13 @@ def check_busyHours(
 
     return busy_hours
 
-def return_auth(telegram_id) -> int:
+def return_auth(telegram_id) -> dict:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select r.livello_permesso \
+            cur.execute(f"select r.nome_ruolo, r.livello_permesso \
                 from ruolo as r inner join utente as u on r.nome_ruolo=u.nome_ruolo \
                 where u.telegram_id={telegram_id}")
-        return cur.fetchone()["livello_permesso"]
+        return cur.fetchone()
 
 def auth(nome_ruolo) -> int:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
@@ -266,4 +271,15 @@ def delete_prenotazione(
                 return True
             else:
                 return False
-    
+
+def delete_data(
+    telegram_id: int
+) -> bool:
+    query=f"delete from utente where telegram_id={telegram_id}"
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            if cur.execute(query):
+                __myconn.commit()
+                return True
+            else:
+                return False

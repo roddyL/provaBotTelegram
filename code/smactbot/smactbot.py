@@ -24,12 +24,14 @@ login_conv_handler = ConversationHandler(
     states={
         LOGIN_CHECK: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_check)],
         CONTACTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_contacts)],
-        MENU: [CommandHandler("menu", menu)],
+        # MENU: [CommandHandler("menu", menu)],
         BUTTON: [CallbackQueryHandler(button)],
         LOCATION: [MessageHandler(
             filters.LOCATION & ~filters.TEXT & ~filters.COMMAND, send_location)]
     },
-    fallbacks=[CommandHandler(["cancel", "logout", "back"], fallback)]
+    # fallbacks=[CommandHandler(["cancel", "logout", "back"], fallback)]
+    fallbacks=[CommandHandler(["back"], fallback)]
+
 )
 
 # dispatcher add handler

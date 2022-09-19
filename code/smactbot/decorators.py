@@ -1,4 +1,8 @@
 from telegram.ext import ConversationHandler
+from smactbot.db_functions import change_role
+from smactbot.vars import BUTTON
+from smactbot.db_functions import return_auth
+from smactbot.interfaces import menu_interface_main
 from smactbot.db_functions import update_session, check_whitelist
 
 def session_check(func):
@@ -8,12 +12,34 @@ def session_check(func):
         else:
             telegram_id=update.message.from_user.id
 
-        if telegram_id not in check_whitelist():
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="La sessione è scaduta, ripassa per il /login !")
-            context.user_data['in_conversation'] = False
-            return ConversationHandler.END
-        else:
-            update_session(telegram_id)
-            return await func(update, context)
+        if check_whitelist(telegram_id=telegram_id)==0:
+            # additionalText="La sessione è scaduta, ripassa per il login!"
+            # interfaccia = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id),additionalText=additionalText)       
+            # # context.user_data['in_conversation'] = False
+            # if update.callback_query:
+            #     await update.callback_query.edit_message_text(text=interfaccia[0], 
+            #                         reply_markup=interfaccia[1])
+            # else:
+            #     await update.message.reply_text(text=interfaccia[0], 
+            #                         reply_markup=interfaccia[1])
+            # update_session(telegram_id)
+            # return BUTTON
+            if update.callback_query:
+                update.callback_query.data="logout"
+            else:
+                additionalText="La sessione è scaduta, ripassa per il login!"
+                interfaccia = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id),additionalText=additionalText)    
+                await update.message.reply_text(text=interfaccia[0], 
+                                    reply_markup=interfaccia[1])
+                update_session(telegram_id)
+                change_role(telegram_id=telegram_id,nome_ruolo="guest")
+
+                return BUTTON
+
+        update_session(telegram_id)
+        return await func(update, context)
 
     return the_check 
+
+def use_log(func):
+    return 

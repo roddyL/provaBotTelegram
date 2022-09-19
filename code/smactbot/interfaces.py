@@ -14,40 +14,53 @@ from smactbot.utils.utility import (
 )
 import datetime
 from typing import List
+from smactbot.config import *
 
 # interfacce
 
 def menu_interface_main(
-    autorizzazioni: dict
+    autorizzazioni: dict,
+    additionalText: str=""
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard=[]
-
-    if autorizzazioni["can_ufficio"]:
+    livello_permesso=autorizzazioni["livello_permesso"]
+    if livello_permesso<=AUTH_UFFICI:
         keyboard.append(InlineKeyboardButton("uffici 🖥️", callback_data='menu_prenotazioni'))
-    if autorizzazioni["can_livedemo"]:
+    if livello_permesso<=AUTH_LIVEDEMO:
         keyboard.append(InlineKeyboardButton("le live demo 🏭", callback_data='menu_liveDemo'))
-    if autorizzazioni["can_evento"]:
+    if livello_permesso<=AUTH_EVENTI:
         keyboard.append(InlineKeyboardButton("eventi 📅", callback_data='menu_eventi'))
-    if autorizzazioni["can_contatto"]:
+    if livello_permesso<=AUTH_PROFILO:
         keyboard.append(InlineKeyboardButton("il mio profilo 👤", callback_data='menu_profilo'))
-    if autorizzazioni["nome_ruolo"]=="guest":
+    if livello_permesso>=AUTH_LOGIN:
         keyboard.append(InlineKeyboardButton("login 👤", callback_data='login'))
+    if livello_permesso<=AUTH_LOGOUT:
+        keyboard.append(InlineKeyboardButton("logout 👤", callback_data='logout'))
 
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
-    text_reply = f"--Schermata principale--\nSei un utente {autorizzazioni['nome_ruolo']} perciò potrai utilizzare solamente queste funzionalità:"
+    if additionalText:
+        additionalText=f"{additionalText}\n\n"
+    text_reply = f"{additionalText}--Schermata principale--\nSei un utente {autorizzazioni['nome_ruolo']} perciò potrai utilizzare solamente queste funzionalità:"
     return text_reply, reply_markup
 
 def menu_profile_interface(
-    contatti: str
+    contatti: str=None
 ) -> tuple[str, InlineKeyboardMarkup]:
-    keyboard = [
-        InlineKeyboardButton("Modifica contatti", callback_data='menu_modificaContatti'),
-        InlineKeyboardButton("Cancella profilo", callback_data='menu_cancellaProfilo'),
-        InlineKeyboardButton("↩️ indietro",
-                             callback_data='menu_principale')
-    ]
+    keyboard=[]
+    if contatti:
+        text_reply = f"I tuoi contatti:\n{contatti}"
+        keyboard.append(InlineKeyboardButton("Modifica contatti", callback_data='menu_modificaContatti'))
+    else:
+        text_reply = "Non hai registrato alcun contatto per ora"
+        
+    keyboard.append(InlineKeyboardButton("Cancella profilo", 
+                                         callback_data='menu_cancellaProfilo'))
+    keyboard.append(InlineKeyboardButton("↩️ indietro",
+                                        callback_data='menu_principale'))
+        
     reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
-    text_reply = f"I tuoi contatti:\n{contatti}"
+    
+    
     return text_reply, reply_markup
 
 def menu_interface_menu_prenotazioni(
@@ -209,7 +222,6 @@ def calendar_interface(
     return text_reply, reply_markup
 
 def confirm_reservation_interface(
-    telegram_id: int,
     la_prenotazione: Prenotazione
 ) -> tuple[str, InlineKeyboardMarkup]:
     text_reply=f"Riepilogo prenotazione:\n \
@@ -253,13 +265,34 @@ def endReservation_interface(
 
     return text_reply, reply_markup
 
+def select_ufficio_interface(
+    la_prenotazione: Prenotazione,
+    lista_uffici: dict
+) -> tuple[str, InlineKeyboardMarkup]:
+    keyboard=[]
+    for i in lista_uffici:
+        copia=copy.deepcopy(la_prenotazione)
+        copia.setUfficio(i["nome_ufficio"])
+        keyboard.append(InlineKeyboardButton(i["nome_ufficio"],
+                            callback_data=copia))
+        keyboard.append(InlineKeyboardButton("ℹ️",
+                                             callback_data=f"info_{i['descrizione']}"))
+    
+    footer=InlineKeyboardButton("↩️ indietro",
+                             callback_data="menu_prenotazioni")
+    
+    reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=2))
+    text_reply=f"Seleziona l'ufficio che ti serve:"
+    
+    return text_reply, reply_markup
+
 def seats_interface(
     la_prenotazione: Prenotazione,
     autorizzazioni: dict
 ) -> tuple[str, InlineKeyboardMarkup]:
     maxPostiUfficio=20
-    maxPostiPrenotabili=autorizzazioni["max_postiprenot"]
-    if maxPostiPrenotabili==-1:
+    maxPostiPrenotabili=N_POSTIPRENOTABILI
+    if autorizzazioni["livello_permesso"]<=AUTH_MAXPOSTIPRENOTABILI:
         maxPostiPrenotabili=maxPostiUfficio
     
     
@@ -380,68 +413,16 @@ def deleteConfirm_prenotazioni_interface(
 
     return text_reply, reply_markup
 
+def cancellaProfilo_interface():
+    text_reply="Sei sicuro di cancellare tutti i dati che detiene il bot, ovvero i dati di sistema, i contatti e le prenotazioni?"
+    keyboard=[
+        InlineKeyboardButton("annulla",
+                             callback_data="menu_profilo"),
+        InlineKeyboardButton("conferma", 
+                             callback_data="cancella_dati")
+    ]
+    
+    reply_markup=InlineKeyboardMarkup(build_menu(keyboard, n_cols=2))
 
+    return text_reply, reply_markup
 
-# def calendar_interface(
-#     firstDayMonth: datetime.date = None,
-#     busy_days: List[datetime.date] = None,
-# ) -> InlineKeyboardMarkup:
-#     theDay = dayInfo(firstDayMonth)
-#     giorno_datetime = firstDayMonth
-#     mese = theDay["mese"]
-#     anno = theDay["anno"]
-#     lista_giorni = theDay["lista_giorni"]
-
-#     days = [InlineKeyboardButton(i, callback_data="fashion") for i in [
-#         "Lu", "Ma", "Me", "Gi", "Ve", "Sa", "Do"]]
-#     keyboard = []
-#     for i in lista_giorni:
-#         if i[-1] == "❌" or i == " ":
-#             keyboard.append(InlineKeyboardButton(i, callback_data="fashion"))
-#         else:
-#             keyboard.append(InlineKeyboardButton(
-#                 i, callback_data=f"{int(i[:-1])}/{giorno_datetime.month}/{giorno_datetime.year}"))
-
-#     days += keyboard
-#     keyboard = days
-
-#     header = [InlineKeyboardButton(f"{mese} {anno}", callback_data="fashion")]
-#     if giorno_datetime.month == datetime.date.today().month:
-#         footers = []
-#     else:
-#         footers = [InlineKeyboardButton(
-#             "⬅️", callback_data=f"chMonth_{previous_month(giorno_datetime.month, giorno_datetime.year)}")]
-
-#     footers.append(InlineKeyboardButton(
-#         "➡️", callback_data=f"chMonth_{next_month(giorno_datetime.month, giorno_datetime.year)}"))
-
-#     footer_back = [InlineKeyboardButton("⬅️ indietro",
-#                                         callback_data='menu_prenotazioni')]
-
-#     reply_markup = InlineKeyboardMarkup(build_menu(
-#         keyboard, n_cols=7, header_buttons=header, footer_buttons=footers, footer_footer=footer_back))
-
-#     text_reply = f"seleziona data"
-#     return text_reply, reply_markup
-# 
-# # def hours_interface(
-#     giornoSelezionato: str,
-#     fasceOrarie: List[str] = ["mattino", "pomeriggio"]
-# ) -> tuple[str, InlineKeyboardMarkup]:
-
-#     keyboard = []
-#     for i in fasceOrarie:
-#         keyboard.append(InlineKeyboardButton(i, callback_data=f'fascia_{i}'))
-
-#     if keyboard == []:
-#         text_reply = f"I posti si sono esauriti per il giorno{giornoSelezionato}, mi dispiace!\nTorna indietro e seleziona un'altro giorno"
-#     else:
-#         text_reply = f"Seleziona la fascia oraria desiderata per il giorno {giornoSelezionato}: "
-
-#     footers = [InlineKeyboardButton("⬅️ indietro",
-#                                     callback_data='new_prenotazione')]
-
-#     reply_markup = InlineKeyboardMarkup(build_menu(
-#         keyboard, n_cols=1, footer_buttons=footers))
-
-#     return text_reply, reply_markup

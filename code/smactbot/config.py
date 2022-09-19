@@ -1,5 +1,4 @@
 # authorization
-from db_functions import auth 
 
 # AUTH_FUNZIONALITA = valore permesso
 # ex: 
@@ -7,3 +6,12 @@ from db_functions import auth
 # OR
 # AUTH_UFFICI = 40
 
+AUTH_UFFICI=90
+AUTH_EVENTI=90
+AUTH_LIVEDEMO=99
+AUTH_PROFILO=90
+AUTH_LOGIN=91
+AUTH_LOGOUT=90
+AUTH_MAXPOSTIPRENOTABILI=0
+
+N_POSTIPRENOTABILI=10
