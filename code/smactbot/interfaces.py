@@ -44,15 +44,17 @@ def menu_interface_main(
     return text_reply, reply_markup
 
 def menu_profile_interface(
-    contatti: str=None
+    contatti: str
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard=[]
     if contatti:
         text_reply = f"I tuoi contatti:\n{contatti}"
-        keyboard.append(InlineKeyboardButton("Modifica contatti", callback_data='menu_modificaContatti'))
+        textModificaOInserisci="Modifica contatti"
     else:
         text_reply = "Non hai registrato alcun contatto per ora"
+        textModificaOInserisci="Inserisci contatti"
         
+    keyboard.append(InlineKeyboardButton(text=textModificaOInserisci, callback_data='menu_modificaContatti'))   
     keyboard.append(InlineKeyboardButton("Cancella profilo", 
                                          callback_data='menu_cancellaProfilo'))
     keyboard.append(InlineKeyboardButton("↩️ indietro",
@@ -426,3 +428,21 @@ def cancellaProfilo_interface():
 
     return text_reply, reply_markup
 
+def menu_changeProfile_interface():
+    text_reply="Puoi modificare e/o inserire i seguenti campi:"
+    keyboard=[
+        InlineKeyboardButton("nome",
+                             callback_data="menu_modificaNome"),
+        InlineKeyboardButton("cognome", 
+                             callback_data="menu_modificaCognome"),
+        InlineKeyboardButton("numero",
+                             callback_data="menu_modificaNumero"),
+        InlineKeyboardButton("mail", 
+                             callback_data="menu_modificaMail"),
+        InlineKeyboardButton("↩️ indietro",
+                             callback_data="menu_profilo")        
+    ]
+    
+    reply_markup=InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
+
+    return text_reply, reply_markup

@@ -6,7 +6,7 @@ import datetime
 import pymysql as mc
 from typing import List
 
-from smactbot.utils.utility import check_contacts, create_idPrenotazione
+from smactbot.utils.utility import check_the_contact, create_idPrenotazione
 
 def insert_whitelist(
     telegram_id: int
@@ -28,19 +28,6 @@ def check_whitelist(
     telegram_id: int
     # already_logged: bool = False
 ) -> List[str]:
-    """check_whitelist()
-
-    La funzione va a prendere la lista di persone che hanno già fatto il log in nel sistema.
-    Si può cambiare il campo booleano already_logged per ricevere la lista di persone che sono ancora loggate
-    oppure per ricevere la lista dei log delle persone che hanno fatto il log in, ma la cui sessione è scaduta.
-
-    Args:
-        already_logged (bool, optional): True controllerà le sessioni degli utenti nella whitelist, 
-        False controllerà gli utenti già presenti nella whitelist. Defaults to False.
-
-    Returns:
-        List[str]: utenti presenti nella whitelist
-    """
     # if already_logged:
     #     logged = 0
     # else:
@@ -193,24 +180,27 @@ def insert_firstStart(
 
 def insert_contacts(
     telegram_id: int,
-    username: str,
-    contatti: str
+    tipo_contatto: str,
+    il_contatto: str
 ):
-    if check_contacts(contatti):
+    the_return=False
+    if check_the_contact(tipo_contatto=tipo_contatto, il_contatto=il_contatto):
         
         # inserire query per il database
-        cont=contatti.split("\n")
-        query=f"UPDATE `utente` SET `Nome`='{cont[0]}', `Cognome`='{cont[1]}', `Recapito_telefonico`='{cont[2]}', `Mail`='{cont[3]}' WHERE `telegram_id`={telegram_id}"
+
+        query=f"UPDATE `utente` SET `{tipo_contatto}`='{il_contatto}' WHERE `telegram_id`={telegram_id}"
         with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
             with __myconn.cursor() as cur:
-                cur.execute(query)
-                __myconn.commit()
+                if cur.execute(query):
+                    __myconn.commit()
+                    the_return=True
+                
         
-        insert_whitelist(telegram_id)
+        # insert_whitelist(telegram_id)
 
-        return True
+        return the_return
     else:
-        return False
+        return the_return
     
 def change_role(
     telegram_id: int,
@@ -229,8 +219,12 @@ def show_contacts(
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(query)
-            contatti=cur.fetchall()[0]
-            return f"{contatti['Nome']}\n{contatti['Cognome']}\n{contatti['Recapito_telefonico']}\n{contatti['Mail']}"
+            contatti=cur.fetchone()
+            output=""
+            for i in contatti.values():
+                if i:
+                    output+=f"{i}\n"
+            return output
 
 def show_prenotazioni(
     telegram_id: int

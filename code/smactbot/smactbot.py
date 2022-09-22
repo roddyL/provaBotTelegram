@@ -17,23 +17,21 @@ application = Application.builder().token(
 
 
 # handler
-# start_handler = CommandHandler('start', start)
 login_conv_handler = ConversationHandler(
-    # entry_points=[CommandHandler('start', start),CommandHandler("login", login)],
     entry_points=[CommandHandler('start', start)],
     states={
         LOGIN_CHECK: [MessageHandler(filters.TEXT & ~filters.COMMAND, login_check)],
-        CONTACTS: [MessageHandler(filters.TEXT & ~filters.COMMAND, send_contacts)],
-        # MENU: [CommandHandler("menu", menu)],
+        CONTACT_NAME: [MessageHandler(filters.TEXT &~filters.COMMAND, send_contact_name)],
+        CONTACT_SURNAME: [MessageHandler(filters.TEXT &~filters.COMMAND, send_contact_surname)],
+        CONTACT_NUMBER: [MessageHandler(filters.TEXT &~filters.COMMAND, send_contact_number)],
+        CONTACT_MAIL: [MessageHandler(filters.TEXT &~filters.COMMAND, send_contact_mail)],
         BUTTON: [CallbackQueryHandler(button)],
         LOCATION: [MessageHandler(
             filters.LOCATION & ~filters.TEXT & ~filters.COMMAND, send_location)]
     },
-    # fallbacks=[CommandHandler(["cancel", "logout", "back"], fallback)]
     fallbacks=[CommandHandler(["back"], fallback)]
 
 )
 
 # dispatcher add handler
-# application.add_handler(start_handler)
 application.add_handler(login_conv_handler)

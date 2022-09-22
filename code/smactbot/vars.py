@@ -6,4 +6,4 @@ month_enToIt = {"January": "Gennaio", "February": "Febbraio", "March": "Marzo", 
                 "October": "Ottobre", "November": "Novembre", "December": "Dicembre"}
 
 # variabili conversation handler
-LOGIN, LOGIN_CHECK, MENU, BUTTON, LOCATION, CONTACTS = range(6)
+LOGIN_CHECK, BUTTON, LOCATION, CONTACT_NAME, CONTACT_SURNAME, CONTACT_NUMBER, CONTACT_MAIL = range(7)

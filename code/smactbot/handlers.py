@@ -2,6 +2,7 @@
 
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
+from smactbot.utils.utility import isNameSurname, isMail, isPhoneNumber
 from smactbot.models import Prenotazione
 
 from smactbot.vars import *
@@ -19,22 +20,9 @@ async def start(
     update: Update,
     context: CallbackContext
 ) -> None:
-    """start()
 
-    Args:
-        update (Update): update del bot
-        context (CallbackContext): contesto del bot
-
-    Returns:
-        _type_: None
-    """
     username = update.message.from_user.username
     telegram_id=update.message.from_user.id
-    
-    # if "in_conversation" in context.user_data.keys():
-    #     if context.user_data['in_conversation'] == True:
-    #         await update.message.reply_text("Ehi! sei ancora loggato, se vuoi riavviare il bot effettua prima il /logout! o per un semplice riavvio scrivi /cancel !")
-    #         return
 
     logger.info("Utente \'%s\' con id \'%s\' ha avviato la conversazione %s.",
                 update.message.from_user.username, update.message.from_user.id, update.message.chat_id)
@@ -53,42 +41,21 @@ async def fallback(
     update: Update,
     context: CallbackContext
 ) -> int:
-    """fallback()
 
-    Args:
-        update (Update): update del bot
-        context (CallbackContext): contesto del bot
-
-    Returns:
-        int: prossima schermata
-    """
     username = update.message.from_user.username
     telegram_id=update.message.from_user.id
     chatId=update.message.chat_id
     comando=update.message.text
-    # if comando == "/cancel":
-    #     if telegram_id in check_whitelist():
-    #         logger.info(
-    #             "L'utente \'%s\' con id \'%s\' ha provato a cancellare il login ma risulta loggato.", username, telegram_id)
-    #         await update.message.reply_text(
-    #             "Sei loggato, non puoi effettuare questo comando. In questo caso devi effettuare il comando /logout!")
-    #         return
-    #     else:
-    #         logger.info("L'utente \'%s\' con id \'%s\' ha cancellato il log in.", username, telegram_id)
-    #         await update.message.reply_text(
-    #             "Ritorni alla schermata iniziale!")
-    # elif comando=="/logout" and telegram_id in check_whitelist():
-    #     logout(telegram_id=telegram_id)
-    #     change_role(telegram_id=telegram_id, nome_ruolo="guest")
-        
-    #     # inserire store di tutta la chat
-        
-    #     logger.info("L'utente \'%s\' con id \'%s\' ha effettuato il logout.", username, telegram_id)
-    #     await update.message.reply_text(
-    #         "Logout effettuato!")
+
     if comando=="/back":
         logger.info(
             f"L'utente {username} con id {telegram_id} ha digitato il comando /back")
+        
+        context.user_data["to_delete"].append(update.message.id)
+        
+        for i in context.user_data["to_delete"]:
+            await context.bot.delete_message(chat_id=chatId, message_id=i)
+            
         il_back=context.user_data["back"]
         if isinstance(il_back, int):
             return il_back
@@ -96,57 +63,12 @@ async def fallback(
             interfaccia_back=back_interface(il_back)
             await context.bot.send_message(chat_id=chatId, text=interfaccia_back[0], reply_markup=interfaccia_back[1])
             return BUTTON
-    # else:
-    #     return LOGIN_CHECK
-
-    # context.user_data['in_conversation'] = False
-    # return ConversationHandler.END
-
-
-# async def login(
-#     update: Update,
-#     context: CallbackContext
-# ) -> int:
-#     """login()
-
-#     Args:
-#         update (Update): update del bot
-#         context (CallbackContext): contesto del bot
-
-#     Returns:
-#         int: prossima schermata
-#     """
-#     context.user_data['in_conversation'] = True
-#     username = update.message.from_user.username
-#     telegram_id = update.message.from_user.id
-#     # se è un utente nuovo fa la registrazione
-#     if telegram_id not in check_whitelist():
-#         logger.info(
-#             "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
-#         await update.message.reply_text(
-#             "inserisci la password d'accesso: ")
-#         return LOGIN_CHECK
-    # altrimenti rimanda al menù
-    # else:
-    #     logger.info(
-    #         "Utente \'%s\' con id \'%s\' è gia registrato. Ha effettuato il log in.", username, telegram_id)
-    #     await context.bot.send_message(chat_id=update.effective_chat.id, text="Sei già loggato nel sistema, accedi al menù con /menu!")
-    #     return MENU
-
 
 async def login_check(
     update: Update,
     context: CallbackContext
 ) -> int:
-    """login_check()
 
-    Args:
-        update (Update): update del bot
-        context (CallbackContext): contesto del bot
-
-    Returns:
-        int: prossima schermata
-    """
     username = update.message.from_user.username
     passInserita = update.message.text
     telegram_id = update.message.from_user.id
@@ -161,14 +83,15 @@ async def login_check(
 
     if passInserita == "fromfarmtofork":
         if not check_whitelist(telegram_id=telegram_id):
-            # context.user_data["logged"]=True
             logger.info(
                 "Log in dell'utente \'%s\' con id \'%s\' riuscito. Registrazione in corso.", username, telegram_id)
             # fai partire la richiesta dei contatti
             await context.bot.send_message(chat_id=chatId, 
-                                            text="Password corretta!\n Ora inserisci i tuoi contatti in questo modo:\nNome\nCognome\nnumero di telefono\nla tua mail")
+                                            text="Password corretta!\n Ora inserisci il tuo nome:")
             change_role(telegram_id=telegram_id, nome_ruolo="admin")
-            return CONTACTS
+            context.user_data['back']="login"
+            insert_whitelist(telegram_id=telegram_id)
+            return CONTACT_NAME
         else:
             update_session(telegram_id=telegram_id)
             change_role(telegram_id=telegram_id, nome_ruolo="admin")
@@ -180,45 +103,17 @@ async def login_check(
         menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
         await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
         return BUTTON
-        # return MENU
     else:
         logger.info(
             "Log in dell'utente \'%s\' con id \'%s\' non riuscito. Password usata: %s", username, telegram_id, passInserita)
         return LOGIN_CHECK
-
-# @session_check
-# async def menu(
-#     update: Update,
-#     context: CallbackContext
-# ) -> int:
-#     """menu()
-
-#     Args:
-#         update (Update): update del bot
-#         context (CallbackContext): contesto del bot
-
-#     Returns:
-#         int: prossima schermata
-#     """
-#     telegram_id = update.message.from_user.id
-#     menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
-#     await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
-#     return BUTTON
 
 @session_check
 async def button(
     update: Update,
     context: CallbackContext
 ) -> int:
-    """button()
 
-    Args:
-        update (Update): update del bot
-        context (CallbackContext): contesto del bot
-
-    Returns:
-        int: prossima schermata
-    """
     username = update.callback_query.from_user.username
     telegram_id = update.callback_query.from_user.id
     query = update.callback_query
@@ -270,12 +165,10 @@ async def button(
             return BUTTON
     elif isinstance(query.data, str): 
         if query.data=="login":
-            # context.user_data['in_conversation'] = True
             context.user_data['back']="menu_principale"
             logger.info(
                 "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
-            messaggio=await context.bot.send_message(
-                chat_id=chat_id,
+            messaggio=await query.edit_message_text(
                 text="inserisci la password d'accesso: \n\
                     digita /back per tornare alla schermata precedente"
                 )
@@ -287,12 +180,55 @@ async def button(
             interfaccia = menu_interface_menu_liveDemo()
         elif query.data == 'nearest_liveDemo':
             context.user_data['back']="menu_liveDemo"
-            await query.edit_message_text("mandami la tua posizione e ti saprò dire la live demo più vicina a te! \ndigita il comando /back per tornare alla schermata precedente")
+            messaggio=await query.edit_message_text("mandami la tua posizione e ti saprò dire la live demo più vicina a te! \ndigita il comando /back per tornare alla schermata precedente")
+            context.user_data["to_delete"]=[messaggio.id]
             return LOCATION
         elif query.data == 'menu_prenotazioni':
             interfaccia = menu_interface_menu_prenotazioni(risultato_query=show_prenotazioni(telegram_id=telegram_id))
         elif query.data == "menu_profilo":
             interfaccia=menu_profile_interface(show_contacts(telegram_id=telegram_id))
+        elif query.data == "menu_modificaContatti":
+            interfaccia=menu_changeProfile_interface()
+        elif query.data == "menu_modificaNome":
+            context.user_data['back']="menu_profilo"
+            # logger.info(
+            #     "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
+            messaggio=await query.edit_message_text(
+                text="inserisci il tuo nome: \n\
+                    digita /back per tornare alla schermata precedente"
+                )
+            context.user_data["to_delete"]=[messaggio.id]
+            return CONTACT_NAME
+        elif query.data == "menu_modificaCognome":
+            context.user_data['back']="menu_profilo"
+            # logger.info(
+            #     "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
+            messaggio=await query.edit_message_text(
+                text="inserisci il tuo cognome: \n\
+                    digita /back per tornare alla schermata precedente"
+                )
+            context.user_data["to_delete"]=[messaggio.id]
+            return CONTACT_SURNAME
+        elif query.data == "menu_modificaNumero":
+            context.user_data['back']="menu_profilo"
+            # logger.info(
+            #     "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
+            messaggio=await query.edit_message_text(
+                text="inserisci il tuo numero di telefono: \n\
+                    digita /back per tornare alla schermata precedente"
+                )
+            context.user_data["to_delete"]=[messaggio.id]
+            return CONTACT_NUMBER
+        elif query.data == "menu_modificaMail":
+            context.user_data['back']="menu_profilo"
+            # logger.info(
+            #     "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
+            messaggio=await query.edit_message_text(
+                text="inserisci la tua mail: \n\
+                    digita /back per tornare alla schermata precedente"
+                )
+            context.user_data["to_delete"]=[messaggio.id]
+            return CONTACT_MAIL
         elif query.data == 'menu_cancellaProfilo':
             interfaccia=cancellaProfilo_interface()
         elif query.data == 'cancella_dati':
@@ -307,8 +243,6 @@ async def button(
             # inserire store di tutta la chat
             
             logger.info("L'utente \'%s\' con id \'%s\' ha effettuato il logout.", username, telegram_id)
-            # await context.bot.send_message(chat_id=chat_id,
-            #                                text="Ciao, hai effettuato il logout! \nPremi il tasto login per utilizzare il bot con tutte le sue funzionalità!")
             additionalText="Ciao, hai effettuato il logout!"
             interfaccia = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id),additionalText=additionalText)            
         else:
@@ -329,7 +263,10 @@ async def send_location(
     posizione = update.message.location
     chatId = update.message.chat_id
     
-    await update.message.delete()
+    context.user_data["to_delete"].append(update.message.id)
+    for i in context.user_data["to_delete"]:
+            await context.bot.delete_message(chat_id=chatId, message_id=i)
+            
     logger.info(
         f"Posizione dell'utente {username} con id {telegram_id}: longitudine: {posizione.latitude} latitudine:{posizione.longitude}")
 
@@ -341,37 +278,112 @@ async def send_location(
                                    text=location_interface[0], 
                                    reply_markup=location_interface[1])
 
-    return BUTTON
+    return BUTTON    
 
-async def send_contacts(
+async def send_contact_name(
     update: Update,
     context: CallbackContext
 ) -> int:
     
-    username = update.message.from_user.username
-    telegram_id = update.message.from_user.id
-    contatti = update.message.text
-    chatId = update.message.chat_id
+    return await send_contact_generic(
+        update=update,
+        context=context,
+        tipo_contatto="nome",
+        msg_currentAction="il tuo nome",
+        msg_nextAction="all'inserimento del tuo cognome",
+        current_return=CONTACT_NAME,
+        next_return=CONTACT_SURNAME
+    )
 
-    # if not context.user_data['logged']==True:
-    #     await context.bot.send_message(chat_id=update.effective_chat.id, 
-    #                                    text="La sessione è scaduta, ripassa per il /login !")
-
-    await update.message.delete()
-    logger.info(
-        f"I contatti dell'utente {username} con id {telegram_id}: {contatti}")
-
-    if insert_contacts(telegram_id=telegram_id, 
-                       username=username, 
-                       contatti=contatti):
-        await context.bot.send_message(chat_id=chatId, 
-                                       text="Hai registrato i tuoi contatti!\nOra puoi accedere alle funzioni del bot!")
-        menu_main_interface = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
-        await update.message.reply_text(menu_main_interface[0], 
-                                        reply_markup=menu_main_interface[1])
-        return BUTTON
-    else:
-        await context.bot.send_message(chat_id=chatId, 
-                                       text="Attenzione, hai sbagliato ad inserire i contatti correttamente.\nTi invitiamo a rispettare le regole perfettamente")
-        return CONTACTS
+async def send_contact_surname(
+    update: Update,
+    context: CallbackContext
+) -> int:    
     
+    return await send_contact_generic(
+        update=update,
+        context=context,
+        tipo_contatto="cognome",
+        msg_currentAction="il tuo cognome",
+        msg_nextAction="all'inserimento del tuo numero di telefono",
+        current_return=CONTACT_SURNAME,
+        next_return=CONTACT_NUMBER
+    )
+
+async def send_contact_number(
+    update: Update,
+    context: CallbackContext
+) -> int:    
+    
+    return await send_contact_generic(
+        update=update,
+        context=context,
+        tipo_contatto="recapito_telefonico",
+        msg_currentAction="il tuo numero di telefono",
+        msg_nextAction="all'inserimento della tua mail",
+        current_return=CONTACT_NUMBER,
+        next_return=CONTACT_MAIL
+    )
+
+async def send_contact_mail(
+    update: Update,
+    context: CallbackContext
+) -> int:    
+
+    return await send_contact_generic(
+        update=update,
+        context=context,
+        tipo_contatto="mail",
+        msg_currentAction="la tua mail",
+        msg_nextAction="al menu principale",
+        current_return=CONTACT_MAIL,
+        next_return=BUTTON
+    )
+
+async def send_contact_generic(
+    update: Update,
+    context: CallbackContext,
+    tipo_contatto: str,
+    msg_currentAction: str,
+    msg_nextAction: str,
+    current_return: int,
+    next_return: int
+) -> int:    
+    
+    telegram_id = update.message.from_user.id
+    chatId = update.message.chat_id
+    message_id=update.message.id
+    message=update.message.text
+    
+    for i in context.user_data["to_delete"]:
+        print(i)
+        await context.bot.delete_message(chat_id=chatId, message_id=i)
+    
+    if insert_contacts(telegram_id=telegram_id, tipo_contatto=tipo_contatto, il_contatto=message):
+        if context.user_data['back']!="menu_profilo":
+        # schermata subito dopo il login
+            
+            il_messaggio=await context.bot.send_message(chat_id=chatId, 
+                                        text=f"Hai registrato correttamente {msg_currentAction}, ora passa {msg_nextAction}:")
+            if next_return==BUTTON:
+                interfaccia=menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id))
+                await context.bot.send_message(chat_id=chatId,
+                                                text=interfaccia[0], 
+                                                reply_markup=interfaccia[1])
+            the_return=next_return
+        else:
+            il_messaggio=await context.bot.send_message(chat_id=chatId, 
+                                       text=f"Hai registrato correttamente {msg_currentAction}!")
+            interfaccia=menu_changeProfile_interface()
+            await context.bot.send_message(chat_id=chatId,text=interfaccia[0], 
+                                  reply_markup=interfaccia[1])
+            the_return=BUTTON
+    else:
+        il_messaggio=await context.bot.send_message(chat_id=chatId, 
+                                    text=f"Non hai inserito correttamente {msg_currentAction}, riprova")
+        
+        the_return=current_return
+    
+    context.user_data["to_delete"].append(il_messaggio.id)
+    context.user_data["to_delete"].append(message_id)
+    return the_return

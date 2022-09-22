@@ -223,6 +223,18 @@ def check_contacts(contatti: str) -> bool:
                     return True
     return False
 
+def check_the_contact(tipo_contatto:str, 
+                      il_contatto: str):
+    if tipo_contatto=="nome" or tipo_contatto=="cognome":
+        return isNameSurname(il_contatto)
+    elif tipo_contatto=="recapito_telefonico":
+        return isPhoneNumber(il_contatto)
+    elif tipo_contatto=="mail":
+        return isMail(il_contatto)
+    else:
+        return False
+    
+
 def create_idPrenotazione(
     the_datetime: datetime.date, 
     n_incremental: int
