@@ -3,7 +3,7 @@
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
 from smactbot.utils.utility import isNameSurname, isMail, isPhoneNumber
-from smactbot.models import Prenotazione
+from smactbot.models import Prenotazione, ShowInformation
 
 from smactbot.vars import *
 from smactbot.utils.liveDemo_geolocation import nearest_production
@@ -23,7 +23,7 @@ async def start(
 
     username = update.message.from_user.username
     telegram_id=update.message.from_user.id
-
+    context.user_data["to_delete"]=list()
     logger.info("Utente \'%s\' con id \'%s\' ha avviato la conversazione %s.",
                 update.message.from_user.username, update.message.from_user.id, update.message.chat_id)
     if username:
@@ -53,8 +53,9 @@ async def fallback(
         
         context.user_data["to_delete"].append(update.message.id)
         
-        for i in context.user_data["to_delete"]:
-            await context.bot.delete_message(chat_id=chatId, message_id=i)
+        while len(context.user_data["to_delete"])>0:
+            await context.bot.delete_message(chat_id=chatId, message_id=context.user_data["to_delete"].pop())
+
             
         il_back=context.user_data["back"]
         if isinstance(il_back, int):
@@ -76,25 +77,29 @@ async def login_check(
 
     # cancellazione messaggi
     context.user_data["to_delete"].append(update.message.id)
-    for i in context.user_data["to_delete"]:
-        await context.bot.delete_message(chat_id=chatId, message_id=i)
+    
+    while len(context.user_data["to_delete"])>0:
+        await context.bot.delete_message(chat_id=chatId, message_id=context.user_data["to_delete"].pop())
+
     
     context.user_data["to_delete"]=[]
 
-    if passInserita == "fromfarmtofork":
+    # if passInserita == "fromfarmtofork":
+    passRuoli=getPassRuolo()
+    if passInserita in passRuoli.keys():
         if not check_whitelist(telegram_id=telegram_id):
             logger.info(
                 "Log in dell'utente \'%s\' con id \'%s\' riuscito. Registrazione in corso.", username, telegram_id)
             # fai partire la richiesta dei contatti
             await context.bot.send_message(chat_id=chatId, 
                                             text="Password corretta!\n Ora inserisci il tuo nome:")
-            change_role(telegram_id=telegram_id, nome_ruolo="admin")
+            change_role(telegram_id=telegram_id, nome_ruolo=passRuoli[passInserita])
             context.user_data['back']="login"
             insert_whitelist(telegram_id=telegram_id)
             return CONTACT_NAME
         else:
             update_session(telegram_id=telegram_id)
-            change_role(telegram_id=telegram_id, nome_ruolo="admin")
+            change_role(telegram_id=telegram_id, nome_ruolo=passRuoli[passInserita])
             logger.info(
                 "Log in dell'utente \'%s\' con id \'%s\' riuscito. Update della sessione.", username, telegram_id)
         messaggio=await context.bot.send_message(chat_id=chatId, 
@@ -106,6 +111,9 @@ async def login_check(
     else:
         logger.info(
             "Log in dell'utente \'%s\' con id \'%s\' non riuscito. Password usata: %s", username, telegram_id, passInserita)
+        messaggio=await context.bot.send_message(chat_id=chatId, 
+                                        text="Password SBAGLIATA!\n Riprova a inserire la password.\nPremi /back per tornare indietro")
+        context.user_data["to_delete"].append(messaggio.id)
         return LOGIN_CHECK
 
 @session_check
@@ -117,13 +125,18 @@ async def button(
     username = update.callback_query.from_user.username
     telegram_id = update.callback_query.from_user.id
     query = update.callback_query
-    chat_id=query.message.chat_id
+    chatId=query.message.chat_id
     logger.info(f"conferma callback_query dell'utente {username} con id {telegram_id}: query.data:{query.data}")
+
+    while len(context.user_data["to_delete"])>0:
+        await context.bot.delete_message(chat_id=chatId, message_id=context.user_data["to_delete"].pop())
 
     if isinstance(query.data,Prenotazione):
         this_prenotazione=query.data
-
-        if not this_prenotazione.seatsReady:
+        
+        if not this_prenotazione.nome_ufficio:
+            interfaccia = select_ufficio_interface(la_prenotazione=this_prenotazione, lista_uffici=getUffici(), autorizzazioni=return_auth(telegram_id=telegram_id))
+        elif not this_prenotazione.seatsReady:
             interfaccia = seats_interface(la_prenotazione=this_prenotazione, autorizzazioni=return_auth(telegram_id=telegram_id))
         elif this_prenotazione.chMonth:
             this_prenotazione.setMonthSelected(this_prenotazione.chMonth) 
@@ -152,8 +165,7 @@ async def button(
     
     elif isinstance(query.data, Gallery):
         this_gallery=query.data
-
-        if this_gallery.size>0:
+        if this_gallery.the_class==Prenotazione and this_gallery.size>0:
             if not this_gallery.isDeleting:
                 interfaccia=myPrenotazioni_interface(this_gallery)
             else:
@@ -161,8 +173,11 @@ async def button(
                     interfaccia=delete_prenotazioni_interface(this_gallery)
                 else:
                     interfaccia=deleteConfirm_prenotazioni_interface(this_gallery)
+        elif this_gallery.the_class==ShowInformation:
+            pass
         else:
             return BUTTON
+            
     elif isinstance(query.data, str): 
         if query.data=="login":
             context.user_data['back']="menu_principale"
@@ -246,7 +261,11 @@ async def button(
             additionalText="Ciao, hai effettuato il logout!"
             interfaccia = menu_interface_main(autorizzazioni=return_auth(telegram_id=telegram_id),additionalText=additionalText)            
         else:
-            await query.answer(text="Questa funzione non è stata ancora implementata", show_alert=True)
+            if query.data.split("_")[0]=="info":
+                text=query.data.split("_")[1]
+            else:
+                text="Questa funzione non è stata ancora implementata"
+            await query.answer(text=text, show_alert=True)
             return BUTTON
         
     await query.edit_message_text(text=interfaccia[0], 
@@ -264,8 +283,8 @@ async def send_location(
     chatId = update.message.chat_id
     
     context.user_data["to_delete"].append(update.message.id)
-    for i in context.user_data["to_delete"]:
-            await context.bot.delete_message(chat_id=chatId, message_id=i)
+    while len(context.user_data["to_delete"])>0:
+        await context.bot.delete_message(chat_id=chatId, message_id=context.user_data["to_delete"].pop())
             
     logger.info(
         f"Posizione dell'utente {username} con id {telegram_id}: longitudine: {posizione.latitude} latitudine:{posizione.longitude}")
@@ -355,10 +374,9 @@ async def send_contact_generic(
     message_id=update.message.id
     message=update.message.text
     
-    for i in context.user_data["to_delete"]:
-        print(i)
-        await context.bot.delete_message(chat_id=chatId, message_id=i)
-    
+    while len(context.user_data["to_delete"])>0:
+        await context.bot.delete_message(chat_id=chatId, message_id=context.user_data["to_delete"].pop())
+
     if insert_contacts(telegram_id=telegram_id, tipo_contatto=tipo_contatto, il_contatto=message):
         if context.user_data['back']!="menu_profilo":
         # schermata subito dopo il login

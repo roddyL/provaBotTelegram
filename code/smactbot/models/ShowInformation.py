@@ -1,0 +1,2 @@
+class ShowInformation():
+    pass

@@ -269,12 +269,14 @@ def endReservation_interface(
 
 def select_ufficio_interface(
     la_prenotazione: Prenotazione,
-    lista_uffici: dict
+    lista_uffici: dict,
+    autorizzazioni: dict
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard=[]
     for i in lista_uffici:
         copia=copy.deepcopy(la_prenotazione)
         copia.setUfficio(i["nome_ufficio"])
+        copia.setMaxSeats(i["posti"])
         keyboard.append(InlineKeyboardButton(i["nome_ufficio"],
                             callback_data=copia))
         keyboard.append(InlineKeyboardButton("ℹ️",
@@ -292,7 +294,7 @@ def seats_interface(
     la_prenotazione: Prenotazione,
     autorizzazioni: dict
 ) -> tuple[str, InlineKeyboardMarkup]:
-    maxPostiUfficio=20
+    maxPostiUfficio=la_prenotazione.maxSeats
     maxPostiPrenotabili=N_POSTIPRENOTABILI
     if autorizzazioni["livello_permesso"]<=AUTH_MAXPOSTIPRENOTABILI:
         maxPostiPrenotabili=maxPostiUfficio

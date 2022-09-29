@@ -75,18 +75,55 @@ def logout(
             cur.execute(
                 f"UPDATE `whitelist` SET is_logged=0 WHERE telegram_id={telegram_id}")
             __myconn.commit()
+            
+def getPassword(
+    nome_ruolo: str
+) -> str:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            
+            if cur.execute(f"select password from ruolo where nome_ruolo='{nome_ruolo}'"):
+                password=cur.fetchone()["password"]
+            else:
+                password=False
+    
+    return password
+
+def getRuoli(
+    nome_ruolo: str
+) -> list[str]:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            
+            if cur.execute(f"select nome_ruolo from ruolo"):
+                password=cur.fetchall()
+            else:
+                password=False
+    
+    return password
+
+def getPassRuolo():
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            
+            if cur.execute(f"select nome_ruolo, password from ruolo"):
+                result=cur.fetchall()
+                passRuolo={i["password"]:i["nome_ruolo"] for i in result}
+            else:
+                passRuolo=False
+    
+    return passRuolo
 
 def insert_prenotazione(
     telegram_id: int, 
     seats: int, 
     the_datetime: datetime.date, 
     hours: str,
-    nome_ufficio: str = 'liveDemo+9' 
+    nome_ufficio: str
 ) -> bool:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
             cur.execute(f"select id_prenotazione from prenotazione where data='{the_datetime}' order by id desc LIMIT 1")
-            print()
             n_incremental=cur.fetchall()
             if not n_incremental:
                 n_incremental=0
@@ -113,7 +150,17 @@ def insert_prenotazione(
             except Exception as e:
                 print(e)
                 return False
-                    
+ 
+def getUffici(
+
+) -> dict:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            cur.execute(f"select nome_ufficio, descrizione, posti from ufficio")
+            uffici = cur.fetchall()
+    
+    return uffici
+                       
 
 def check_busyDays(
     posti_daPrenotare: int,
@@ -228,11 +275,11 @@ def show_contacts(
 
 def show_prenotazioni(
     telegram_id: int
-) -> str:
+) -> dict:
     query=f"SELECT * \
             FROM (\
                 SELECT id_prenotazione, nome_ufficio, posti_prenotati, 'intera giornata' as fascia_oraria, data, timestamp \
-                FROM `prenotazione` \
+                FROM `prenotazione`\
                 where telegram_id={telegram_id} \
                 group by id_prenotazione \
                 having count(*)>1 \
@@ -241,7 +288,7 @@ def show_prenotazioni(
                 FROM `prenotazione` \
                 where telegram_id={telegram_id} \
                 group by id_prenotazione \
-                having count(*)=1) as a \
+                having count(*)=1) as a inner join `ufficio` as u on a.nome_ufficio=u.nome_ufficio\
             where data>={datetime.date.today()}\
             order by a.id_prenotazione;"
 

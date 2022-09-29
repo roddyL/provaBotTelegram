@@ -6,6 +6,7 @@ class Prenotazione():
 
     def __init__(self) -> None:
         self.seats = 1 # posti necessari per l'utente
+        self.maxSeats = None
         self.seatsReady = False
         self.the_datetime = None # giorno prenotazione
         self.hours = None  # fascia oraria
@@ -20,6 +21,7 @@ class Prenotazione():
 
     def costruttore(self, tupla: dict) -> object:
         self.seats=int(tupla['posti_prenotati'])
+        self.maxSeats=int(tupla['posti'])
         self.seatsReady=True
         self.the_datetime=tupla['data']
         self.hours=tupla['fascia_oraria']
@@ -38,8 +40,14 @@ class Prenotazione():
     def getSeats(self):
         return self.seats
 
+    def setUfficio(self, nome_ufficio: str):
+        self.nome_ufficio=nome_ufficio
+
     def setSeats(self, seats: int):
         self.seats=seats
+        
+    def setMaxSeats(self, maxSeats: int):
+        self.maxSeats=maxSeats
     
     def setSeatsReady(self, seatsReady: bool):
         self.seatsReady=seatsReady
@@ -63,7 +71,7 @@ class Prenotazione():
         self.isUpdating=True
 
     def carica_prenotazione(self, telegram_id: str) -> bool:
-        return insert_prenotazione(telegram_id, self.seats, self.the_datetime, self.hours) 
+        return insert_prenotazione(telegram_id, self.seats, self.the_datetime, self.hours, self.nome_ufficio) 
 
     def conferma(self, telegram_id: str) -> bool:
         if self.seats and self.the_datetime and self.hours:    
@@ -80,7 +88,7 @@ class Prenotazione():
         return False
 
     def showToGallery(self) -> str:
-        return f"Prenotazione: {self.idPrenotazione}\ndata prenotazione: {self.the_datetime}\nnella fascia oraria: {self.hours}\nposti prenotati: {self.seats}"
+        return f"Prenotazione: {self.idPrenotazione}\nufficio prenotato: {self.nome_ufficio}\ndata prenotazione: {self.the_datetime}\nnella fascia oraria: {self.hours}\nposti prenotati: {self.seats}"
         
     def deletePrenotazione(self):
         return delete_prenotazione(self.idPrenotazione)
