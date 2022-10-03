@@ -1,6 +1,6 @@
 import datetime as dt
 from typing import List
-from smactbot.db_functions import insert_prenotazione, delete_prenotazione
+from smactbot.db_functions import insert_reservation, delete_reservation
 
 class Prenotazione():
 
@@ -20,18 +20,18 @@ class Prenotazione():
         self.isUpdating=None
 
     def costruttore(self, tupla: dict) -> object:
-        self.seats=int(tupla['posti_prenotati'])
-        self.maxSeats=int(tupla['posti'])
+        self.seats=int(tupla['ReservedSeats'])
+        self.maxSeats=int(tupla['TotalSeats'])
         self.seatsReady=True
-        self.the_datetime=tupla['data']
-        self.hours=tupla['fascia_oraria']
+        self.the_datetime=tupla['ReservationDate']
+        self.hours=tupla['TimePeriod']
         self.telegram_id = None
         self.chMonth=None
         self.monthSelected=dt.date.today()
         self.ready=True
-        self.idPrenotazione=tupla['id_prenotazione']
-        self.nome_ufficio=tupla['nome_ufficio']
-        self.timestamp=tupla['timestamp']
+        self.idPrenotazione=tupla['ReservationId']
+        self.nome_ufficio=tupla['OfficeName']
+        self.timestamp=tupla['TimeStamp']
         return self
 
     def __repr__(self):
@@ -71,7 +71,7 @@ class Prenotazione():
         self.isUpdating=True
 
     def carica_prenotazione(self, telegram_id: str) -> bool:
-        return insert_prenotazione(telegram_id, self.seats, self.the_datetime, self.hours, self.nome_ufficio) 
+        return insert_reservation(telegram_id=telegram_id, reserved_seats=self.seats, reservation_date=self.the_datetime, time_period=self.hours, office_name=self.nome_ufficio) 
 
     def conferma(self, telegram_id: str) -> bool:
         if self.seats and self.the_datetime and self.hours:    
@@ -91,5 +91,5 @@ class Prenotazione():
         return f"Prenotazione: {self.idPrenotazione}\nufficio prenotato: {self.nome_ufficio}\ndata prenotazione: {self.the_datetime}\nnella fascia oraria: {self.hours}\nposti prenotati: {self.seats}"
         
     def deletePrenotazione(self):
-        return delete_prenotazione(self.idPrenotazione)
+        return delete_reservation(reservation_id=self.idPrenotazione)
 

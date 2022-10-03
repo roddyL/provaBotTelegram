@@ -223,20 +223,20 @@ def check_contacts(contatti: str) -> bool:
                     return True
     return False
 
-def check_the_contact(tipo_contatto:str, 
-                      il_contatto: str):
-    if tipo_contatto=="nome" or tipo_contatto=="cognome":
-        return isNameSurname(il_contatto)
-    elif tipo_contatto=="recapito_telefonico":
-        return isPhoneNumber(il_contatto)
-    elif tipo_contatto=="mail":
-        return isMail(il_contatto)
+def check_the_contact(contact_type:str, 
+                      the_single_contact: str):
+    if contact_type=="Name" or contact_type=="Surname":
+        return isNameSurname(the_single_contact)
+    elif contact_type=="TelephoneNumber":
+        return isPhoneNumber(the_single_contact)
+    elif contact_type=="Mail":
+        return isMail(the_single_contact)
     else:
         return False
     
 
-def create_idPrenotazione(
-    the_datetime: datetime.date, 
+def create_reservation_id(
+    reservation_date: datetime.date, 
     n_incremental: int
 ) -> str:
-    return f"{the_datetime}_{n_incremental+1}"
+    return f"{reservation_date}_{n_incremental+1}"

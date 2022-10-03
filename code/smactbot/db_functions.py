@@ -1,46 +1,38 @@
 # db_functions.py
 
 # import delle librerie
-from ast import Return
 import datetime
 import pymysql as mc
 from typing import List
+from smactbot.queries import *
 
-from smactbot.utils.utility import check_the_contact, create_idPrenotazione
+from smactbot.utils.utility import check_the_contact, create_reservation_id
 
 def insert_whitelist(
     telegram_id: int
 ) -> None:
     """insert_whitelist()
     
-    La funzione inserisce nel database lo username dell'utente che ha effettuato il log in, solo se non era presente nella whitelist.
+    La funzione inserisce nel database ...
 
     Args:
-        username (str): username da inserire nella whitelist
+        telegram_id (int): ...
     """
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(
-                f"INSERT INTO `whitelist` (`telegram_id`,`dt_lastLogin`) VALUES ({telegram_id},CURRENT_TIMESTAMP)")
+            cur.execute(query_insert_whitelist.format(**locals()))
             __myconn.commit()
 
 def check_whitelist(
     telegram_id: int
-    # already_logged: bool = False
 ) -> List[str]:
-    # if already_logged:
-    #     logged = 0
-    # else:
-    #     logged = 1
+
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         # update whitelist da database
         with __myconn.cursor() as cur:
-            # cur.execute(f"select * from whitelist where is_logged={logged}")
-            query=f"select is_logged from whitelist where telegram_id={telegram_id}"
             is_logged=None
-            if cur.execute(query):
-            # whitelist = [i["telegram_id"] for i in cur.fetchall()]
-                is_logged=cur.fetchone()["is_logged"]
+            if cur.execute(query_check_whitelist.format(**locals())):
+                is_logged=cur.fetchone()["IsLogged"]
 
     return is_logged
 
@@ -52,12 +44,11 @@ def update_session(
     La funzione rende possibile fare l'update dell'ultimo log in dell'utente
 
     Args:
-        username (str): utente che deve aggiornare la sessione
+        telegram_id (int): utente che deve aggiornare la sessione
     """
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(
-                f"UPDATE `whitelist` SET is_logged=1, dt_lastLogin=CURRENT_TIMESTAMP WHERE telegram_id={telegram_id}")
+            cur.execute(query_update_session.format(**locals()))
             __myconn.commit()
 
 def logout(
@@ -68,246 +59,175 @@ def logout(
     La funzione rende possibile togliere il log in alla persona senza cancellarla dal database
 
     Args:
-        username (str): utente che deve effettuare il logout
+        telegram_id (int): utente che deve effettuare il logout
     """
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(
-                f"UPDATE `whitelist` SET is_logged=0 WHERE telegram_id={telegram_id}")
+            cur.execute(query_logout.format(**locals()))
             __myconn.commit()
-            
-def getPassword(
-    nome_ruolo: str
-) -> str:
-    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
-        with __myconn.cursor() as cur:
-            
-            if cur.execute(f"select password from ruolo where nome_ruolo='{nome_ruolo}'"):
-                password=cur.fetchone()["password"]
-            else:
-                password=False
-    
-    return password
 
-def getRuoli(
-    nome_ruolo: str
-) -> list[str]:
+def get_role_password():
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            
-            if cur.execute(f"select nome_ruolo from ruolo"):
-                password=cur.fetchall()
-            else:
-                password=False
-    
-    return password
-
-def getPassRuolo():
-    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
-        with __myconn.cursor() as cur:
-            
-            if cur.execute(f"select nome_ruolo, password from ruolo"):
+            if cur.execute(query_get_role_password):
                 result=cur.fetchall()
-                passRuolo={i["password"]:i["nome_ruolo"] for i in result}
+                passRuolo={i["Password"]:i["RoleName"] for i in result}
             else:
                 passRuolo=False
     
     return passRuolo
 
-def insert_prenotazione(
+def insert_reservation(
     telegram_id: int, 
-    seats: int, 
-    the_datetime: datetime.date, 
-    hours: str,
-    nome_ufficio: str
+    reserved_seats: int, 
+    reservation_date: datetime.date, 
+    time_period: str,
+    office_name: str
 ) -> bool:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select id_prenotazione from prenotazione where data='{the_datetime}' order by id desc LIMIT 1")
+            cur.execute(query1_insert_reservation.format(**locals()))
             n_incremental=cur.fetchall()
             if not n_incremental:
                 n_incremental=0
             else:
-                n_incremental=int(n_incremental[0]["id_prenotazione"].split("_")[1])
+                n_incremental=int(n_incremental[0]["ReservationId"].split("_")[1])
                 print(n_incremental)
             
-            idPrenotazione=create_idPrenotazione(the_datetime=the_datetime, n_incremental=n_incremental)
-            if not hours=="intera giornata":
-                query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
-                        VALUES  ('{idPrenotazione}', '{telegram_id}', '{nome_ufficio}', '{seats}', '{hours}', '{the_datetime}',  current_timestamp())"
-            else:
-                query=f"INSERT INTO `prenotazione` (`id_prenotazione`, `telegram_id`, `nome_ufficio`, `posti_prenotati`, `fascia_oraria`, `data`, `timestamp`)\
-                        VALUES  ('{idPrenotazione}', '{telegram_id}', '{nome_ufficio}', '{seats}', 'mattino', '{the_datetime}',  current_timestamp()),\
-                                ('{idPrenotazione}', '{telegram_id}', '{nome_ufficio}', '{seats}', 'pomeriggio', '{the_datetime}',  current_timestamp())"
-            
+            reservation_id=create_reservation_id(reservation_date=reservation_date, n_incremental=n_incremental)
+            print(reservation_id)
             try:
-                result=cur.execute(query)
-                if result==0 or (result==1 and hours=="intera giornata"):
+                
+                if not time_period=="intera giornata":
+                    print("qui")
+                    # result=cur.execute(query2_insert_reservation.format(**locals()))
+                    result=cur.execute(f"INSERT INTO `reservation` (`ReservationId`, `TelegramId`, `OfficeName`, `ReservedSeats`, `TimePeriod`, `ReservationDate`) VALUES  ('{reservation_id}', {telegram_id}, '{office_name}', '{reserved_seats}', '{time_period}', '{reservation_date}')"
+)
+                else:
+                    print("qui")
+                    result=cur.execute(query3_insert_reservation.format(**locals()))
+                if result==0 or (result==1 and time_period=="intera giornata"):
                     return False
                 else:
                     __myconn.commit()
-                    return True    
+                    return True
             except Exception as e:
                 print(e)
+                print("questo è l'errore")
                 return False
- 
-def getUffici(
-
+                
+def get_office(
 ) -> dict:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select nome_ufficio, descrizione, posti from ufficio")
-            uffici = cur.fetchall()
+            cur.execute(query_get_office)
+            offices = cur.fetchall()
     
-    return uffici
+    return offices
                        
 
-def check_busyDays(
-    posti_daPrenotare: int,
-    monthSelected: datetime.date
+def check_busy_days(
+    reserved_seats: int,
+    selected_month: datetime.date,
+    office_name: str
 ) -> List[datetime.date]:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select `p`.`data` AS `data`,`u`.`posti` - sum(`p`.`posti_prenotati`) AS `posti_disponibili` \
-                            from (`tg_bot`.`prenotazione` `p` join `tg_bot`.`ufficio` `u` on(`p`.`nome_ufficio` = `u`.`nome_ufficio`)) \
-                            WHERE MONTH(p.data)=MONTH('{monthSelected}')\
-                            group by `p`.`data`, p.fascia_oraria\
-                            HAVING posti_disponibili<{posti_daPrenotare};")
-            busy_days = [i["data"] for i in cur.fetchall()]
-            busy_days= [i for i in busy_days if busy_days.count(i)>1]
+            cur.execute(query_check_busy_days.format(**locals()))
+            busy_days = [i["ReservationDate"] for i in cur.fetchall()]
+            busy_days = [i for i in busy_days if busy_days.count(i)>1]
     
     return busy_days
 
-def check_busyHours(
-    data: datetime.date,
-    posti_daPrenotare: int
+def check_busy_time_period(
+    reservation_date: datetime.date,
+    reserved_seats: int,
+    office_name: str
 ) -> List[str]:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select p.fascia_oraria, `u`.`posti` - sum(`p`.`posti_prenotati`) AS `posti_disponibili` \
-                            from (`tg_bot`.`prenotazione` `p` join `tg_bot`.`ufficio` `u` on(`p`.`nome_ufficio` = `u`.`nome_ufficio`)) \
-                            WHERE p.data='{data}'\
-                            GROUP BY p.fascia_oraria\
-                            HAVING posti_disponibili<{posti_daPrenotare};")
-            busy_hours = [i["fascia_oraria"] for i in cur.fetchall()]
+            cur.execute(query_check_busy_time_period.format(**locals()))
+            busy_hours = [i["TimePeriod"] for i in cur.fetchall()]
 
     return busy_hours
 
-def return_auth(telegram_id) -> dict:
+def check_authorization(telegram_id) -> dict:
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(f"select r.nome_ruolo, r.livello_permesso \
-                from ruolo as r inner join utente as u on r.nome_ruolo=u.nome_ruolo \
-                where u.telegram_id={telegram_id}")
-        return cur.fetchone()
+            cur.execute(query_check_authorization.format(**locals()))
+            result = cur.fetchone()
+    return result
 
-def auth(nome_ruolo) -> int:
-    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
-        with __myconn.cursor() as cur:
-            cur.execute(f"select r.livello_permesso \
-                from ruolo as r \
-                where nome_ruolo='{nome_ruolo}'")
-        return cur.fetchone()["livello_permesso"]
-
-
-def insert_firstStart(
+def insert_first_start(
     telegram_id: int,
     username: str=None
-):
-        query=f"INSERT INTO `utente` (`telegram_id`, `Username`,`nome_ruolo`) VALUES ({telegram_id},'{username}','guest')"
-        with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
-            with __myconn.cursor() as cur:
-                try:
-                    cur.execute(query)
-                except Exception as e:
-                    return     
-                
+) -> None:
+    with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
+        with __myconn.cursor() as cur:
+            if not cur.execute(query1_insert_first_start.format(**locals())):
+                cur.execute(query2_insert_first_start.format(**locals()))
                 __myconn.commit()
                 
 
 def insert_contacts(
     telegram_id: int,
-    tipo_contatto: str,
-    il_contatto: str
+    contact_type: str,
+    the_single_contact: str
 ):
-    the_return=False
-    if check_the_contact(tipo_contatto=tipo_contatto, il_contatto=il_contatto):
-        
-        # inserire query per il database
-
-        query=f"UPDATE `utente` SET `{tipo_contatto}`='{il_contatto}' WHERE `telegram_id`={telegram_id}"
+    if check_the_contact(contact_type=contact_type, the_single_contact=the_single_contact):
         with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
             with __myconn.cursor() as cur:
-                if cur.execute(query):
-                    __myconn.commit()
-                    the_return=True
-                
-        
-        # insert_whitelist(telegram_id)
+                result=cur.execute(query_insert_contacts.format(**locals()))
+                __myconn.commit()
 
-        return the_return
+        return result>0
     else:
-        return the_return
+        return False
     
 def change_role(
     telegram_id: int,
-    nome_ruolo: str
+    role_name: str
 ):
-    query=f"UPDATE `utente` SET `nome_ruolo`='{nome_ruolo}' WHERE `telegram_id`={telegram_id}"
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query_change_role.format(**locals()))
             __myconn.commit()
 
 def show_contacts(
     telegram_id: int
 ) -> str:
-    query=f"SELECT Nome, Cognome, Recapito_telefonico, Mail FROM `utente` where telegram_id={telegram_id}"
+    
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(query)
-            contatti=cur.fetchone()
+            cur.execute(query_show_contacts.format(**locals()))
+            contacts=cur.fetchone()
             output=""
-            for i in contatti.values():
+            for i in contacts.values():
                 if i:
                     output+=f"{i}\n"
             return output
 
-def show_prenotazioni(
+def show_reservations(
     telegram_id: int
 ) -> dict:
-    query=f"SELECT * \
-            FROM (\
-                SELECT id_prenotazione, nome_ufficio, posti_prenotati, 'intera giornata' as fascia_oraria, data, timestamp \
-                FROM `prenotazione`\
-                where telegram_id={telegram_id} \
-                group by id_prenotazione \
-                having count(*)>1 \
-            UNION \
-                SELECT  id_prenotazione, nome_ufficio, posti_prenotati, fascia_oraria, data, timestamp \
-                FROM `prenotazione` \
-                where telegram_id={telegram_id} \
-                group by id_prenotazione \
-                having count(*)=1) as a inner join `ufficio` as u on a.nome_ufficio=u.nome_ufficio\
-            where data>={datetime.date.today()}\
-            order by a.id_prenotazione;"
+    
 
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            cur.execute(query)
-            prenotazioni=cur.fetchall()
-            if len(prenotazioni)>0:
-                return prenotazioni
+            today = datetime.date.today()
+            cur.execute(query_show_reservations.format(**locals(),**globals()))
+            reservations=cur.fetchall()
+            if len(reservations)>0:
+                return reservations
             else:
                 False
 
-def delete_prenotazione(
-    id_prenotazione: str
+def delete_reservation(
+    reservation_id: str
 ) -> bool:
-    query=f"delete from prenotazione where id_prenotazione='{id_prenotazione}'"
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            if cur.execute(query):
+            if cur.execute(query_delete_reservation.format(**locals())):
                 __myconn.commit()
                 return True
             else:
@@ -316,10 +236,9 @@ def delete_prenotazione(
 def delete_data(
     telegram_id: int
 ) -> bool:
-    query=f"delete from utente where telegram_id={telegram_id}"
     with mc.connect(host="localhost", user="root", passwd="", database="tg_bot", cursorclass=mc.cursors.DictCursor) as __myconn:
         with __myconn.cursor() as cur:
-            if cur.execute(query):
+            if cur.execute(query_delete_data.format(**locals())):
                 __myconn.commit()
                 return True
             else:
