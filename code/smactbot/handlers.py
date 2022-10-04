@@ -2,7 +2,6 @@
 
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
-from smactbot.utils.utility import isNameSurname, isMail, isPhoneNumber
 from smactbot.models import Prenotazione, ShowInformation
 
 from smactbot.vars import *

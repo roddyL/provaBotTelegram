@@ -15,3 +15,10 @@ AUTH_LOGOUT=90
 AUTH_MAXPOSTIPRENOTABILI=0
 
 N_POSTIPRENOTABILI=10
+
+
+# database access credentials
+DB_HOST = "localhost"
+DB_USER = "root"
+DB_PASSWORD = ""
+DB_NAME = "tg_bot"

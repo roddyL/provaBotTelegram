@@ -347,25 +347,26 @@ def myPrenotazioni_interface(
     copiaNext = copy.deepcopy(la_galleria)
     copiaDelete = copy.deepcopy(la_galleria)
     copiaDelete.isDeletingChange()
-
+    keyboard = []
+    copiaBack.back()
+    copiaNext.next()
+    
     if la_galleria.pos == 0:
         strBack = " "
     if la_galleria.pos == la_galleria.size-1:
         strNext = " "
-
-    copiaBack.back()
-    copiaNext.next()
-
-    keyboard = [
+    if not( strBack == " " and strNext == " "):
+        keyboard = [
         InlineKeyboardButton(strBack,
                              callback_data=copiaBack),
         InlineKeyboardButton(strNext,
-                             callback_data=copiaNext),
-        # InlineKeyboardButton("modifica",
-        #                      callback_data="fashion"),
-        InlineKeyboardButton("cancella",
-                             callback_data=copiaDelete)
-    ]
+                             callback_data=copiaNext)]
+
+    
+
+    keyboard.append(InlineKeyboardButton("cancella",
+                             callback_data=copiaDelete))
+    
 
     footers = [InlineKeyboardButton("↩️ indietro",
                                     callback_data="menu_prenotazioni")]
