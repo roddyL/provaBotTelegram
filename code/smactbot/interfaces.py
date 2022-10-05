@@ -3,7 +3,7 @@
 import copy
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from smactbot.models.Gallery import Gallery
-from smactbot.models.Prenotazione import Prenotazione
+from smactbot.models.Reservation import Reservation
 from smactbot.utils.utility import (
     build_menu,
     dayInfo,
@@ -77,12 +77,12 @@ def menu_interface_menu_prenotazioni(
 
     keyboard = [
         InlineKeyboardButton("nuova prenotazione",
-                             callback_data=Prenotazione()),
+                             callback_data=Reservation()),
     ]
 
     if reservation_list:
         keyboard.append(InlineKeyboardButton("le mie prenotazioni",
-                                             callback_data=Gallery(the_class=Prenotazione, the_query=reservation_list)))
+                                             callback_data=Gallery(the_class=Reservation, the_query=reservation_list)))
 
     keyboard.append(InlineKeyboardButton("↩️ indietro",
                                          callback_data='menu_principale'))
@@ -134,7 +134,7 @@ def back_interface(
 
 
 def hours_interface(
-    la_prenotazione: Prenotazione,
+    la_prenotazione: Reservation,
     busy_hours: List[str]
 ) -> tuple[str, InlineKeyboardMarkup]:
 
@@ -152,9 +152,9 @@ def hours_interface(
         keyboard.append(InlineKeyboardButton(i, callback_data=copia))
 
     if keyboard == []:
-        text_reply = f"I posti si sono esauriti per il giorno{la_prenotazione.the_datetime}, mi dispiace!\nTorna indietro e seleziona un'altro giorno"
+        text_reply = f"I posti si sono esauriti per il giorno{la_prenotazione.reservation_date}, mi dispiace!\nTorna indietro e seleziona un'altro giorno"
     else:
-        text_reply = f"Seleziona la fascia oraria desiderata per il giorno {la_prenotazione.the_datetime}: "
+        text_reply = f"Seleziona la fascia oraria desiderata per il giorno {la_prenotazione.reservation_date}: "
 
     copia = copy.deepcopy(la_prenotazione)
     copia.setDatetime(None)
@@ -168,7 +168,7 @@ def hours_interface(
 
 
 def calendar_interface(
-    la_prenotazione: Prenotazione,
+    la_prenotazione: Reservation,
     giorni_uffici_pieni: List[datetime.date],
     firstDayMonth: datetime.date = None
 ) -> InlineKeyboardMarkup:
@@ -224,7 +224,7 @@ def calendar_interface(
         "➡️", callback_data=copia))
 
     footers = [InlineKeyboardButton("↩️ indietro",
-                                    callback_data=Prenotazione())]
+                                    callback_data=Reservation())]
 
     reply_markup = InlineKeyboardMarkup(build_menu(
         keyboard, n_cols=7, header_buttons=header, footer_buttons=footers))
@@ -234,11 +234,11 @@ def calendar_interface(
 
 
 def confirm_reservation_interface(
-    la_prenotazione: Prenotazione
+    la_prenotazione: Reservation
 ) -> tuple[str, InlineKeyboardMarkup]:
     text_reply = f"Riepilogo prenotazione:\n \
-        posti prenotati: {la_prenotazione.seats}\n \
-        data: {la_prenotazione.the_datetime}\n \
+        posti prenotati: {la_prenotazione.reserved_seats}\n \
+        data: {la_prenotazione.reservation_date}\n \
         fascia oraria: {la_prenotazione.hours}\n\n \
         vuoi confermare la prenotazione?"
 
@@ -262,12 +262,12 @@ def endReservation_interface(
 ) -> tuple[str, InlineKeyboardMarkup]:
     keyboard = [
         InlineKeyboardButton("Nuova prenotazione",
-                             callback_data=Prenotazione())]
+                             callback_data=Reservation())]
 
     if buonaRiuscita:
         text_reply = f"prenotazione confermata!\nOra scegli se effettuare una nuova prenotazione o ritornare al menu principale!"
         keyboard.append(InlineKeyboardButton("Le mie prenotazioni",
-                                             callback_data=Gallery(the_class=Prenotazione, the_query=reservation_list)))
+                                             callback_data=Gallery(the_class=Reservation, the_query=reservation_list)))
     else:
         text_reply = f"la prenotazione non ha avuto successo\nEffettua per piacere una nuova prenotazione oppure torna al menu principale"
 
@@ -280,7 +280,7 @@ def endReservation_interface(
 
 
 def select_ufficio_interface(
-    la_prenotazione: Prenotazione,
+    la_prenotazione: Reservation,
     lista_uffici: dict,
     autorizzazioni: dict # da aggiungere controllo autorizzazioni per vari uffici
 ) -> tuple[str, InlineKeyboardMarkup]:
@@ -304,10 +304,10 @@ def select_ufficio_interface(
     return text_reply, reply_markup
 
 def seats_interface(
-    la_prenotazione: Prenotazione,
+    la_prenotazione: Reservation,
     autorizzazioni: dict
 ) -> tuple[str, InlineKeyboardMarkup]:
-    maxPostiUfficio = la_prenotazione.maxSeats
+    maxPostiUfficio = la_prenotazione.office_total_seats
     maxPostiPrenotabili = N_POSTIPRENOTABILI
     if autorizzazioni["AuthorizationLevel"] <= AUTH_MAXPOSTIPRENOTABILI:
         maxPostiPrenotabili = maxPostiUfficio

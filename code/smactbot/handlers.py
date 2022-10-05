@@ -2,7 +2,8 @@
 
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
-from smactbot.models import Prenotazione, ShowInformation
+from smactbot.models.Reservation import Reservation
+from smactbot.models.ShowInformation import ShowInformation
 
 from smactbot.vars import *
 from smactbot.utils.liveDemo_geolocation import nearest_production
@@ -131,50 +132,47 @@ async def button(
         f"conferma callback_query dell'utente {username} con id {telegram_id}: query.data:{query.data}")
 
     while len(context.user_data["to_delete"]) > 0:
-        await context.bot.delete_message(chat_id=chat_id, 
+        await context.bot.delete_message(chat_id=chat_id,
                                          message_id=context.user_data["to_delete"].pop())
 
-    if isinstance(query.data, Prenotazione):
-        this_prenotazione = query.data
+    if isinstance(query.data, Reservation):
+        this_prenotazione: Reservation = query.data
 
-        if not this_prenotazione.nome_ufficio:
+        if not this_prenotazione.office_name:
             interfaccia = select_ufficio_interface(la_prenotazione=this_prenotazione, lista_uffici=get_office(
             ), autorizzazioni=check_authorization(telegram_id=telegram_id))
-        elif not this_prenotazione.seatsReady:
+        elif not this_prenotazione.is_seats_ready:
             interfaccia = seats_interface(
                 la_prenotazione=this_prenotazione, autorizzazioni=check_authorization(telegram_id=telegram_id))
-        elif this_prenotazione.chMonth:
-            this_prenotazione.setMonthSelected(this_prenotazione.chMonth)
-            this_prenotazione.setChMonth(None)
-            interfaccia = calendar_interface(firstDayMonth=this_prenotazione.monthSelected,
+        elif this_prenotazione.next_month_to_show:
+            this_prenotazione.showed_month = this_prenotazione.next_month_to_show
+            this_prenotazione.next_month_to_show = None
+            interfaccia = calendar_interface(firstDayMonth=this_prenotazione.showed_month,
                                              la_prenotazione=this_prenotazione,
-                                             giorni_uffici_pieni=check_busy_days(reserved_seats=this_prenotazione.seats,
-                                                                                 selected_month=this_prenotazione.monthSelected,
-                                                                                 office_name=this_prenotazione.nome_ufficio))
-        elif not this_prenotazione.the_datetime:
-            interfaccia = calendar_interface(firstDayMonth=this_prenotazione.monthSelected,
+                                             giorni_uffici_pieni=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
+                                                                                 selected_month=this_prenotazione.showed_month,
+                                                                                 office_name=this_prenotazione.office_name))
+        elif not this_prenotazione.reservation_date:
+            interfaccia = calendar_interface(firstDayMonth=this_prenotazione.showed_month,
                                              la_prenotazione=this_prenotazione,
-                                             giorni_uffici_pieni=check_busy_days(reserved_seats=this_prenotazione.seats,
-                                                                                 selected_month=this_prenotazione.monthSelected,
-                                                                                 office_name=this_prenotazione.nome_ufficio))
-        elif not this_prenotazione.hours:
+                                             giorni_uffici_pieni=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
+                                                                                 selected_month=this_prenotazione.showed_month,
+                                                                                 office_name=this_prenotazione.office_name))
+        elif not this_prenotazione.time_period:
             interfaccia = hours_interface(la_prenotazione=this_prenotazione,
-                                          busy_hours=check_busy_time_period(reservation_date=this_prenotazione.the_datetime,
-                                                                            reserved_seats=this_prenotazione.seats,
-                                                                            office_name=this_prenotazione.nome_ufficio))
-        elif not this_prenotazione.ready:
-            if not this_prenotazione.isUpdating:
-                interfaccia = confirm_reservation_interface(
-                    la_prenotazione=this_prenotazione)
-            else:
-                pass
+                                          busy_hours=check_busy_time_period(reservation_date=this_prenotazione.reservation_date,
+                                                                            reserved_seats=this_prenotazione.reserved_seats,
+                                                                            office_name=this_prenotazione.office_name))
+        elif not this_prenotazione.is_reservation_ready:
+            interfaccia = confirm_reservation_interface(
+                la_prenotazione=this_prenotazione)
         else:
-            interfaccia = endReservation_interface(this_prenotazione.conferma(telegram_id=telegram_id),
+            interfaccia = endReservation_interface(this_prenotazione.confirm_reservation(telegram_id=telegram_id),
                                                    reservation_list=show_reservations(telegram_id=telegram_id))
 
     elif isinstance(query.data, Gallery):
         this_gallery = query.data
-        if this_gallery.the_class == Prenotazione and this_gallery.size > 0:
+        if this_gallery.the_class == Reservation and this_gallery.size > 0:
             if not this_gallery.isDeleting:
                 interfaccia = myPrenotazioni_interface(this_gallery)
             else:
