@@ -300,7 +300,7 @@ def insert_contacts(
         bool: True if it has worked, False otherwise
     """
     if check_the_contact(contact_type=contact_type, the_single_contact=the_single_contact):
-        result = generic_db_function(query=query_insert_contacts, commit=True)
+        result = generic_db_function(query=query_insert_contacts.format(**locals()), commit=True)
         return result
     else:
         return False

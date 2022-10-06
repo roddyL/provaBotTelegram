@@ -1,17 +1,23 @@
-# utils.py
+# !/code/smactbot/utils/utility.py
+# Authors:
+#     Alberto
+#     Loris
+"""This module contains all the useful function used across the python project"""
 
-# funzioni
-
+# libraries
 from typing import Union, List
 import datetime
 import calendar
-from holidays import italy as italianHolidays
+from holidays import italy as italian_holidays
 from telegram import InlineKeyboardButton
 from smactbot.vars import month_enToIt
 import re
 
+# functions
 
-def giorni_festivi(year: int, provincia: str) -> List[datetime.date]:
+# comments written in italian and not completed
+
+def get_holidays(year: int, province: str) -> List[datetime.date]:
     """giorni_gestivi()
 
     Args:
@@ -21,12 +27,12 @@ def giorni_festivi(year: int, provincia: str) -> List[datetime.date]:
     Returns:
         List[datetime.date]: lista di giorni festivi
     """
-    festivi = []
-    for i, j in sorted(italianHolidays.Italy(subdiv=provincia, years=year).items()):
-        if datetime.date.weekday(i) != 6:
-            festivi.append(i)
+    holidays_list = []
+    for the_holidays, _ in sorted(italian_holidays.Italy(subdiv=province, years=year).items()):
+        if datetime.date.weekday(the_holidays) != 6:
+            holidays_list.append(the_holidays)
 
-    return festivi
+    return holidays_list
 
 
 def next_month(
@@ -142,7 +148,7 @@ def dayInfo(
         }
     """
 
-    holidays = list(set(giorni_festivi(day.year, "PD")) | set(holidays))
+    holidays = list(set(get_holidays(day.year, "PD")) | set(holidays))
     giorni = []
     for i in calendar.monthcalendar(day.year, day.month):
         for j in i:
@@ -194,43 +200,45 @@ def build_menu(
             footer_buttons, list) else [footer_footer])
     return menu
 
-def isNameSurname(nome: str) -> bool:
+# missing comments all down here
+
+def is_name_or_surname(name_or_surname: str) -> bool:
     pat = "[a-zA-Z ]+"
     sp_char= re.compile("[^[\w ]]")
-    if re.match(pat,nome)and (sp_char.search(nome) == None):
+    if re.match(pat,name_or_surname)and (sp_char.search(name_or_surname) == None):
         return True
     return False
 
-def isPhoneNumber(phoneNumber: str) -> bool:
-    pat = "\+?[0-9]{0,2}[-. ]?[0-9]{3}[-. ]?[0-9]{3}[-.]?[0-9]{4}"
+def is_telephone_number(telephone_number: str) -> bool:
+    path = "\+?[0-9]{0,2}[-. ]?[0-9]{3}[-. ]?[0-9]{3}[-.]?[0-9]{4}"
     sp_char= re.compile("[^[0-9 +-.]]")
-    if re.match(pat,phoneNumber) and (sp_char.search(phoneNumber) == None):
+    if re.match(path,telephone_number) and (sp_char.search(telephone_number) == None):
         return True
     return False
 
-def isMail(mail: str) -> bool:
+def is_mail(mail: str) -> bool:
     pat = "^[a-zA-Z0-9-_.]+@[a-zA-Z0-9]+\.[a-z]{1,3}$"
     if re.match(pat,mail):
         return True
     return False
 
-def check_contacts(contatti: str) -> bool:
-    cont=contatti.split(sep="\n")
+def check_contacts(contacts: str) -> bool:
+    cont=contacts.split(sep="\n")
     if len(cont)==4:
-        if isNameSurname(cont[0]) and isNameSurname(cont[1]):
-            if isPhoneNumber(cont[2]):
-                if isMail(cont[3]):
+        if is_name_or_surname(cont[0]) and is_name_or_surname(cont[1]):
+            if is_telephone_number(cont[2]):
+                if is_mail(cont[3]):
                     return True
     return False
 
 def check_the_contact(contact_type:str, 
                       the_single_contact: str):
     if contact_type=="Name" or contact_type=="Surname":
-        return isNameSurname(the_single_contact)
+        return is_name_or_surname(the_single_contact)
     elif contact_type=="TelephoneNumber":
-        return isPhoneNumber(the_single_contact)
+        return is_telephone_number(the_single_contact)
     elif contact_type=="Mail":
-        return isMail(the_single_contact)
+        return is_mail(the_single_contact)
     else:
         return False
     

@@ -1,5 +1,10 @@
-# interfaces.py
+# !/code/smactbot/interfaces.py
+# Authors:
+#     Alberto
+#     Loris
+"""This module contains all the interfaces for the buttons menu"""
 
+# libraries
 import copy
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from smactbot.models.Gallery import Gallery
@@ -14,8 +19,7 @@ import datetime
 from typing import List
 from smactbot.config import *
 
-# interfacce
-
+# interfaces
 
 def menu_interface_main(
     autorizzazioni: dict,

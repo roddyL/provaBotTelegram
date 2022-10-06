@@ -5,7 +5,6 @@
 
 # libraries
 import datetime as dt
-from typing import List
 from smactbot.db_functions import insert_reservation, delete_reservation
 
 # the class Reservation

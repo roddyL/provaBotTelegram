@@ -3,9 +3,6 @@
 #     Alberto
 #     Loris
 
-# libraries
-import copy
-
 # the class Gallery
 class Gallery():
     """This class contains a generic gallery where each node contains
@@ -45,7 +42,7 @@ class Gallery():
         will be set to True, and the deleting action on the db will happen
         """
 
-    def user_want_to_delete(self) -> None:
+    def user_want_to_delete_change(self) -> None:
         """Change the status of the var user_want_to_delete
         """
         self.user_want_to_delete=not self.user_want_to_delete

@@ -1,4 +1,5 @@
 from telegram.ext import ConversationHandler
+from smactbot.TgButtonInterface import TgButtonInterface
 from smactbot.db_functions import change_role
 from smactbot.vars import BUTTON
 from smactbot.interfaces import menu_interface_main
@@ -27,7 +28,7 @@ def session_check(func):
                 update.callback_query.data="logout"
             else:
                 additionalText="La sessione è scaduta, ripassa per il login!"
-                interfaccia = menu_interface_main(autorizzazioni=check_authorization(telegram_id=telegram_id),additionalText=additionalText)    
+                interfaccia = TgButtonInterface.main_menu(role_authorization=check_authorization(telegram_id=telegram_id),additional_text=additionalText)    
                 await update.message.reply_text(text=interfaccia[0], 
                                     reply_markup=interfaccia[1])
                 update_session(telegram_id=telegram_id)

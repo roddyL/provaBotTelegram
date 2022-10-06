@@ -2,6 +2,7 @@
 
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
+from smactbot.TgButtonInterface import TgButtonInterface
 from smactbot.models.Reservation import Reservation
 from smactbot.models.ShowInformation import ShowInformation
 
@@ -139,47 +140,47 @@ async def button(
         this_prenotazione: Reservation = query.data
 
         if not this_prenotazione.office_name:
-            interfaccia = select_ufficio_interface(la_prenotazione=this_prenotazione, lista_uffici=get_office(
-            ), autorizzazioni=check_authorization(telegram_id=telegram_id))
+            the_interface = TgButtonInterface.office_selection(the_reservation=this_prenotazione, office_list=get_office(
+            ), role_authorization=check_authorization(telegram_id=telegram_id))
         elif not this_prenotazione.reserved_seats:
-            interfaccia = seats_interface(
-                la_prenotazione=this_prenotazione, autorizzazioni=check_authorization(telegram_id=telegram_id))
+            the_interface = TgButtonInterface.seats_interface(
+                the_reservation=this_prenotazione, role_authorization=check_authorization(telegram_id=telegram_id))
         elif this_prenotazione.next_month_to_show:
             this_prenotazione.showed_month = this_prenotazione.next_month_to_show
             this_prenotazione.next_month_to_show = None
-            interfaccia = calendar_interface(firstDayMonth=this_prenotazione.showed_month,
-                                             la_prenotazione=this_prenotazione,
-                                             giorni_uffici_pieni=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
+            the_interface = TgButtonInterface.reservation_date_selection(firstDayMonth=this_prenotazione.showed_month,
+                                             the_reservation=this_prenotazione,
+                                             full_office_days=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
                                                                                  selected_month=this_prenotazione.showed_month,
                                                                                  office_name=this_prenotazione.office_name))
         elif not this_prenotazione.reservation_date:
-            interfaccia = calendar_interface(firstDayMonth=this_prenotazione.showed_month,
-                                             la_prenotazione=this_prenotazione,
-                                             giorni_uffici_pieni=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
+            the_interface = TgButtonInterface.reservation_date_selection(firstDayMonth=this_prenotazione.showed_month,
+                                             the_reservation=this_prenotazione,
+                                             full_office_days=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
                                                                                  selected_month=this_prenotazione.showed_month,
                                                                                  office_name=this_prenotazione.office_name))
         elif not this_prenotazione.time_period:
-            interfaccia = hours_interface(la_prenotazione=this_prenotazione,
-                                          busy_hours=check_busy_time_period(reservation_date=this_prenotazione.reservation_date,
+            the_interface = TgButtonInterface.time_period_selection(the_reservation=this_prenotazione,
+                                          busy_time_periods=check_busy_time_period(reservation_date=this_prenotazione.reservation_date,
                                                                             reserved_seats=this_prenotazione.reserved_seats,
                                                                             office_name=this_prenotazione.office_name))
         elif not this_prenotazione.is_reservation_ready:
-            interfaccia = confirm_reservation_interface(
-                la_prenotazione=this_prenotazione)
+            the_interface = TgButtonInterface.confirm_reservation_action(
+                the_reservation=this_prenotazione)
         else:
-            interfaccia = endReservation_interface(this_prenotazione.confirm_reservation(telegram_id=telegram_id),
+            the_interface = TgButtonInterface.end_reservation_action(this_prenotazione.confirm_reservation(telegram_id=telegram_id),
                                                    reservation_list=show_reservations(telegram_id=telegram_id))
 
     elif isinstance(query.data, Gallery):
         this_gallery = query.data
         if this_gallery.the_class == Reservation and this_gallery.size > 0:
             if not this_gallery.user_want_to_delete:
-                interfaccia = myPrenotazioni_interface(this_gallery)
+                the_interface = TgButtonInterface.show_reservation_list_action(this_gallery)
             else:
                 if not this_gallery.is_ready_to_delete:
-                    interfaccia = delete_prenotazioni_interface(this_gallery)
+                    the_interface = TgButtonInterface.delete_reservation_action(this_gallery)
                 else:
-                    interfaccia = deleteConfirm_prenotazioni_interface(
+                    the_interface = TgButtonInterface.confirm_delete_action(
                         this_gallery)
         elif this_gallery.the_class == ShowInformation:
             pass
@@ -198,23 +199,23 @@ async def button(
             context.user_data["to_delete"] = [messaggio.id]
             return LOGIN_CHECK
         elif query.data == "menu_principale":
-            interfaccia = menu_interface_main(
-                autorizzazioni=check_authorization(telegram_id=telegram_id))
+            the_interface = TgButtonInterface.main_menu(
+                role_authorization=check_authorization(telegram_id=telegram_id))
         elif query.data == 'menu_liveDemo':
-            interfaccia = menu_interface_menu_liveDemo()
+            the_interface = TgButtonInterface.livedemo_menu()
         elif query.data == 'nearest_liveDemo':
             context.user_data['back'] = "menu_liveDemo"
             messaggio = await query.edit_message_text("mandami la tua posizione e ti saprò dire la live demo più vicina a te! \ndigita il comando /back per tornare alla schermata precedente")
             context.user_data["to_delete"] = [messaggio.id]
             return LOCATION
         elif query.data == 'menu_prenotazioni':
-            interfaccia = menu_interface_menu_prenotazioni(
-                reservation_list=show_reservations(telegram_id=telegram_id))
+            the_interface = TgButtonInterface.reservations_menu(
+                reservations_list=show_reservations(telegram_id=telegram_id))
         elif query.data == "menu_profilo":
-            interfaccia = menu_profile_interface(
+            the_interface = TgButtonInterface.profile_menu(
                 show_contacts(telegram_id=telegram_id))
         elif query.data == "menu_modificaContatti":
-            interfaccia = menu_changeProfile_interface()
+            the_interface = TgButtonInterface.change_contacts_action()
         elif query.data == "menu_modificaNome":
             context.user_data['back'] = "menu_profilo"
             # logger.info(
@@ -256,7 +257,7 @@ async def button(
             context.user_data["to_delete"] = [messaggio.id]
             return CONTACT_MAIL
         elif query.data == 'menu_cancellaProfilo':
-            interfaccia = cancellaProfilo_interface()
+            the_interface = TgButtonInterface.delete_profile_action()
         elif query.data == 'cancella_dati':
             delete_data(telegram_id=telegram_id)
             await query.edit_message_text(text="Hai cancellato tutti i tuoi dati. \nSe vuoi ricominciare una nuova conversazione con il bot digita /start")
@@ -271,8 +272,8 @@ async def button(
             logger.info(
                 "L'utente \'%s\' con id \'%s\' ha effettuato il logout.", username, telegram_id)
             additionalText = "Ciao, hai effettuato il logout!"
-            interfaccia = menu_interface_main(autorizzazioni=check_authorization(
-                telegram_id=telegram_id), additionalText=additionalText)
+            the_interface = TgButtonInterface.main_menu(role_authorization=check_authorization(
+                telegram_id=telegram_id), additional_text=additionalText)
         else:
             if query.data.split("_")[0] == "info":
                 text = query.data.split("_")[1]
@@ -281,8 +282,8 @@ async def button(
             await query.answer(text=text, show_alert=True)
             return BUTTON
 
-    await query.edit_message_text(text=interfaccia[0],
-                                  reply_markup=interfaccia[1])
+    await query.edit_message_text(text=the_interface[0],
+                                  reply_markup=the_interface[1])
     return BUTTON
 
 
@@ -403,8 +404,8 @@ async def send_contact_generic(
             il_messaggio = await context.bot.send_message(chat_id=chat_id,
                                                           text=f"Hai registrato correttamente {msg_currentAction}, ora passa {msg_nextAction}:")
             if next_return == BUTTON:
-                interfaccia = menu_interface_main(
-                    autorizzazioni=check_authorization(telegram_id=telegram_id))
+                interfaccia = TgButtonInterface.main_menu(
+                    role_authorization=check_authorization(telegram_id=telegram_id))
                 await context.bot.send_message(chat_id=chat_id,
                                                text=interfaccia[0],
                                                reply_markup=interfaccia[1])
@@ -412,7 +413,7 @@ async def send_contact_generic(
         else:
             il_messaggio = await context.bot.send_message(chat_id=chat_id,
                                                           text=f"Hai registrato correttamente {msg_currentAction}!")
-            interfaccia = menu_changeProfile_interface()
+            interfaccia = TgButtonInterface.change_contacts_action()
             await context.bot.send_message(chat_id=chat_id, text=interfaccia[0],
                                            reply_markup=interfaccia[1])
             the_return = BUTTON

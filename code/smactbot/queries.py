@@ -1,3 +1,10 @@
+# !/code/smactbot/queries.py
+# Authors:
+#     Alberto
+#     Loris
+"""This module contains all the queries used in the module db_functions"""
+
+# queries
 query_insert_whitelist = "INSERT INTO `whitelist` (`TelegramId`,`DtLastLogin`) VALUES ({telegram_id},CURRENT_TIMESTAMP)"
 query_check_whitelist = "select IsLogged from whitelist where TelegramId={telegram_id}"
 query_update_session = "UPDATE `whitelist` SET IsLogged=1, DtLastLogin=CURRENT_TIMESTAMP WHERE TelegramId={telegram_id}"
