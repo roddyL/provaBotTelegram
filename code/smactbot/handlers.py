@@ -141,7 +141,7 @@ async def button(
         if not this_prenotazione.office_name:
             interfaccia = select_ufficio_interface(la_prenotazione=this_prenotazione, lista_uffici=get_office(
             ), autorizzazioni=check_authorization(telegram_id=telegram_id))
-        elif not this_prenotazione.is_seats_ready:
+        elif not this_prenotazione.reserved_seats:
             interfaccia = seats_interface(
                 la_prenotazione=this_prenotazione, autorizzazioni=check_authorization(telegram_id=telegram_id))
         elif this_prenotazione.next_month_to_show:
@@ -173,10 +173,10 @@ async def button(
     elif isinstance(query.data, Gallery):
         this_gallery = query.data
         if this_gallery.the_class == Reservation and this_gallery.size > 0:
-            if not this_gallery.isDeleting:
+            if not this_gallery.user_want_to_delete:
                 interfaccia = myPrenotazioni_interface(this_gallery)
             else:
-                if not this_gallery.isReadyDelete:
+                if not this_gallery.is_ready_to_delete:
                     interfaccia = delete_prenotazioni_interface(this_gallery)
                 else:
                     interfaccia = deleteConfirm_prenotazioni_interface(

@@ -10,31 +10,54 @@ from smactbot.db_functions import insert_reservation, delete_reservation
 
 # the class Reservation
 class Reservation():
-    """This class contains all the informations about a 
-    reservation --- da finire 
+    """This class contains all the informations about a reservation. 
+    This reservation is meant to be uploaded on the db. The methods
+    inside allows an easier upload and management of the reservation.
     """
     
     def __init__(self) -> None:
-        self.reservation_id = None
+        self.reservation_id = None 
+        """Str: date_id \nFor example: 2022-12-22_1"""
         self.telegram_id = None
+        """Int: the telegram user id"""
         self.office_name = None
-        self.reserved_seats = 1
+        """Str: name of the office selected"""
+        self.reserved_seats = None
+        """Int: number of seats that user has been reserved"""
         self.office_total_seats = None
-        self.is_seats_ready = False
+        """Int: the max possible number of seats in the office"""
         self.reservation_date = None
+        """Datetime.date: date selected by the user for the reservation"""
         self.next_month_to_show = None
+        """Datetime.date: the next month that will be showed in the 
+        calendar interface"""
         self.showed_month = dt.date.today()
+        """Datetime.date: the month that is showed in the calendar
+        interface. Default is the month of today"""
         self.time_period = None
+        """Str: the time period selected by the user. For example:
+        'Morning', 'Afternoon' or 'the entire day'"""
         self.is_reservation_ready = False
+        """Bool: until the user don't press the confirm button, the var 
+        is set to False, insted when it press the button the reservation
+        is ready and the upload will initialize"""
 
 
     def gallery_item_constructor(self, tupla: dict) -> object:
+        """From a tuple of the db, it creates a reservation with the 
+        info inside the tuple
+
+        Args:
+            tupla (dict): the tuple came from the db
+
+        Returns:
+            object: return itself
+        """
         self.reservation_id = tupla['ReservationId']
         self.telegram_id = None
         self.office_name = tupla['OfficeName']
         self.reserved_seats = int(tupla['ReservedSeats'])
         self.office_total_seats = int(tupla['TotalSeats'])
-        self.is_seats_ready = True
         self.reservation_date = tupla['ReservationDate']
         self.time_period = tupla['TimePeriod']
         self.next_month_to_show = None
@@ -104,10 +127,10 @@ class Reservation():
             - Reserved seats
         """
         return f"Reservation: {self.reservation_id}\n\
-                Office name: {self.office_name}\n\
-                Reservation date: {self.reservation_date}\n\
-                Time period: {self.time_period}\n\
-                Reserved_seats: {self.reserved_seats}"
+            Office name: {self.office_name}\n\
+            Reservation date: {self.reservation_date}\n\
+            Time period: {self.time_period}\n\
+            Reserved_seats: {self.reserved_seats}"
 
     def delete_reservation(self) -> bool:
         """It deletes the reservation from the db

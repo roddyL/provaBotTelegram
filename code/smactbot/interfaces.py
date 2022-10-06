@@ -148,7 +148,7 @@ def hours_interface(
     keyboard = []
     for i in fasceOrarie:
         copia = copy.deepcopy(la_prenotazione)
-        copia.setHours(i)
+        copia.time_period = i
         keyboard.append(InlineKeyboardButton(i, callback_data=copia))
 
     if keyboard == []:
@@ -157,7 +157,7 @@ def hours_interface(
         text_reply = f"Seleziona la fascia oraria desiderata per il giorno {la_prenotazione.reservation_date}: "
 
     copia = copy.deepcopy(la_prenotazione)
-    copia.setDatetime(None)
+    copia.reservation_date = None
     footers = [InlineKeyboardButton("↩️ indietro",
                                     callback_data=copia)]
 
@@ -188,13 +188,11 @@ def calendar_interface(
                 i, callback_data=la_prenotazione))
         else:
             copia = copy.deepcopy(la_prenotazione)
-            copia.setDatetime(
-                the_datetime=datetime.date(
+            copia.reservation_date = datetime.date(
                     day=int(i[:-1]),
                     month=giorno_datetime.month,
                     year=giorno_datetime.year
                 )
-            )
 
             keyboard.append(InlineKeyboardButton(
                 i, callback_data=copia))
@@ -211,15 +209,15 @@ def calendar_interface(
         the_previous_month = previous_month(
             giorno_datetime.month, giorno_datetime.year)
         copia = copy.deepcopy(la_prenotazione)
-        copia.setChMonth(datetime.date(day=int(the_previous_month.split(
-            "/")[0]), month=int(the_previous_month.split("/")[1]), year=int(the_previous_month.split("/")[2])))
+        copia.next_month_to_show = datetime.date(day=int(the_previous_month.split(
+            "/")[0]), month=int(the_previous_month.split("/")[1]), year=int(the_previous_month.split("/")[2]))
         header.insert(0, InlineKeyboardButton(
             "⬅️", callback_data=copia))
 
     the_next_month = next_month(giorno_datetime.month, giorno_datetime.year)
     copia = copy.deepcopy(la_prenotazione)
-    copia.setChMonth(datetime.date(day=int(the_next_month.split(
-        "/")[0]), month=int(the_next_month.split("/")[1]), year=int(the_next_month.split("/")[2])))
+    copia.next_month_to_show = datetime.date(day=int(the_next_month.split(
+        "/")[0]), month=int(the_next_month.split("/")[1]), year=int(the_next_month.split("/")[2]))
     header.append(InlineKeyboardButton(
         "➡️", callback_data=copia))
 
@@ -239,12 +237,12 @@ def confirm_reservation_interface(
     text_reply = f"Riepilogo prenotazione:\n \
         posti prenotati: {la_prenotazione.reserved_seats}\n \
         data: {la_prenotazione.reservation_date}\n \
-        fascia oraria: {la_prenotazione.hours}\n\n \
+        fascia oraria: {la_prenotazione.time_period}\n\n \
         vuoi confermare la prenotazione?"
 
     copia = copy.deepcopy(la_prenotazione)
-    copia.setHours(None)
-    la_prenotazione.setReady(True)
+    copia.time_period = None
+    la_prenotazione.is_reservation_ready = True
     keyboard = [
         InlineKeyboardButton("conferma",
                              callback_data=la_prenotazione),
@@ -287,8 +285,8 @@ def select_ufficio_interface(
     keyboard = []
     for i in lista_uffici:
         copia = copy.deepcopy(la_prenotazione)
-        copia.setUfficio(i["OfficeName"])
-        copia.setMaxSeats(i["TotalSeats"])
+        copia.office_name = i["OfficeName"]
+        copia.office_total_seats = i["TotalSeats"]
         keyboard.append(InlineKeyboardButton(i["OfficeName"],
                                              callback_data=copia))
         keyboard.append(InlineKeyboardButton("ℹ️",
@@ -315,8 +313,8 @@ def seats_interface(
     keyboard = []
     for posto in range(1, maxPostiPrenotabili+1):
         copia = copy.deepcopy(la_prenotazione)
-        copia.setSeatsReady(True)
-        copia.setSeats(posto)
+
+        copia.reserved_seats = posto
         keyboard.append(InlineKeyboardButton(posto,
                                              callback_data=copia))
 
@@ -325,7 +323,7 @@ def seats_interface(
                                              callback_data=la_prenotazione))
 
     copia = copy.deepcopy(la_prenotazione)
-    copia.setUfficio(None)
+    copia.office_name= None
     footers = [InlineKeyboardButton("↩️ indietro",
                                     callback_data=copia)]
 
@@ -346,7 +344,7 @@ def myPrenotazioni_interface(
     copiaBack = copy.deepcopy(la_galleria)
     copiaNext = copy.deepcopy(la_galleria)
     copiaDelete = copy.deepcopy(la_galleria)
-    copiaDelete.isDeletingChange()
+    copiaDelete.user_want_to_delete()
     keyboard = []
     copiaBack.back()
     copiaNext.next()
@@ -384,8 +382,8 @@ def delete_prenotazioni_interface(
 
     copiaAnnulla = copy.deepcopy(la_galleria)
     copiaConferma = copy.deepcopy(la_galleria)
-    copiaAnnulla.isDeletingChange()
-    copiaConferma.isReadyDeleteChange()
+    copiaAnnulla.user_want_to_delete()
+    copiaConferma.is_ready_to_delete_change()
 
     keyboard = [
         InlineKeyboardButton("annulla",

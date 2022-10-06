@@ -8,7 +8,10 @@ import copy
 
 # the class Gallery
 class Gallery():
-    """This class contains -- da finire
+    """This class contains a generic gallery where each node contains
+    a generic object where class is indicated with the attribute 'the
+    _class'. All the objects in the gallery needs to belong to 'the_ 
+    class'.
     """
     
     def __init__(
@@ -26,21 +29,31 @@ class Gallery():
             indicate there is no nodes.
         """
         self.the_class=the_class
+        """Class: this is the nature type of each node in the gallery"""
         self.the_query=the_query
+        """List[dict]: this is a list of tuple from the db"""
         self.pos=int(0)
+        """Int: this is the pointer of the gallery"""
         self.size=len(the_query)
-        self.isDeleting=False
-        self.isReadyDelete=False
+        """Int: the size of the gallery"""
+        self.user_want_to_delete=False
+        """Bool: False until the user don't press delete to the node, 
+        True when the user press the delete button
+        """
+        self.is_ready_to_delete=False
+        """Bool: if the user confirm the choice to delete the node, it
+        will be set to True, and the deleting action on the db will happen
+        """
 
-    def isDeletingChange(self) -> None:
-        """_summary_
+    def user_want_to_delete(self) -> None:
+        """Change the status of the var user_want_to_delete
         """
-        self.isDeleting=not self.isDeleting
+        self.user_want_to_delete=not self.user_want_to_delete
     
-    def isReadyDeleteChange(self) -> None:
-        """_summary_
+    def is_ready_to_delete_change(self) -> None:
+        """Change the status of the var is_ready_to_delete
         """
-        self.isReadyDelete=not self.isReadyDelete
+        self.is_ready_to_delete=not self.is_ready_to_delete
 
     def next(self) -> None:
         """It goes to the next node
@@ -60,10 +73,10 @@ class Gallery():
         Returns:
             bool: True if it has worked, False otherwise
         """
-        if self.the_class().costruttore(self.the_query[self.pos]).delete_reservation():
+        if self.the_class().gallery_item_constructor(self.the_query[self.pos]).delete_reservation():
             self.the_query.pop(self.pos)
-            self.isDeletingChange()
-            self.isReadyDeleteChange()
+            self.user_want_to_delete()
+            self.is_ready_to_delete_change()
             self.size-=1
             if self.pos!=0:
                 self.pos-=1
@@ -78,7 +91,7 @@ class Gallery():
         Returns:
             str: the info that object want to give with show_to_gallery
         """
-        return self.the_class().constructor(self.the_query[self.pos]).show_to_gallery()
+        return self.the_class().gallery_item_constructor(self.the_query[self.pos]).show_to_gallery()
     
     def __repr__(self) -> str:
         return f"\nPos: {self.pos}\nSize: {self.size}\n{self.the_query}"
