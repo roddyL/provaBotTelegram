@@ -13,7 +13,7 @@ from smactbot.models.Gallery import Gallery
 from smactbot.models.Reservation import Reservation
 from smactbot.utils.utility import (
     build_menu,
-    dayInfo,
+    day_info,
     next_month,
     previous_month
 )
@@ -180,55 +180,55 @@ class TgButtonInterface():
         return text_reply, reply_markup
 
     @classmethod
-    def reservation_date_selection( # da sistemare
+    def reservation_date_selection(
         cls,
         the_reservation: Reservation,
         full_office_days: List[datetime.date],
-        firstDayMonth: datetime.date = None
+        first_day_of_the_month: datetime.date = None
     ) -> InlineKeyboardMarkup:
-        theDay = dayInfo(day=firstDayMonth,
-                        giorni_uffici_pieni=full_office_days)
-        giorno_datetime = firstDayMonth
-        mese = theDay["mese"]
-        anno = theDay["anno"]
-        lista_giorni = theDay["lista_giorni"]
+        the_day = day_info(day=first_day_of_the_month,
+                        full_office_days=full_office_days)
+        first_day_of_showed_month = first_day_of_the_month
+        month = the_day["month"]
+        year = the_day["year"]
+        days_list = the_day["days_list"]
 
         days = [InlineKeyboardButton(i, callback_data=the_reservation) for i in [
             "Lu", "Ma", "Me", "Gi", "Ve", "Sa", "Do"]]
         keyboard = []
-        for i in lista_giorni:
-            if i[-1] == "❌" or i == " ":
+        for a_day in days_list:
+            if a_day[-1] == "❌" or a_day == " ":
                 keyboard.append(InlineKeyboardButton(
-                    i, callback_data=the_reservation))
+                    a_day, callback_data=the_reservation))
             else:
                 object_copy = copy.deepcopy(the_reservation)
                 object_copy.reservation_date = datetime.date(
-                        day=int(i[:-1]),
-                        month=giorno_datetime.month,
-                        year=giorno_datetime.year
+                        day=int(a_day[:-1]),
+                        month=first_day_of_showed_month.month,
+                        year=first_day_of_showed_month.year
                     )
 
                 keyboard.append(InlineKeyboardButton(
-                    i, callback_data=object_copy))
+                    a_day, callback_data=object_copy))
 
         days += keyboard
         keyboard = days
 
         header = [InlineKeyboardButton(
-            f"{mese} {anno}", callback_data=the_reservation)]
-        if giorno_datetime.month == datetime.date.today().month:
+            f"{month} {year}", callback_data=the_reservation)]
+        if first_day_of_showed_month.month == datetime.date.today().month:
             header.insert(0, InlineKeyboardButton(
                 " ", callback_data=the_reservation))
         else:
             the_previous_month = previous_month(
-                giorno_datetime.month, giorno_datetime.year)
+                first_day_of_showed_month.month, first_day_of_showed_month.year)
             object_copy = copy.deepcopy(the_reservation)
             object_copy.next_month_to_show = datetime.date(day=int(the_previous_month.split(
                 "/")[0]), month=int(the_previous_month.split("/")[1]), year=int(the_previous_month.split("/")[2]))
             header.insert(0, InlineKeyboardButton(
                 "⬅️", callback_data=object_copy))
 
-        the_next_month = next_month(giorno_datetime.month, giorno_datetime.year)
+        the_next_month = next_month(first_day_of_showed_month.month, first_day_of_showed_month.year)
         object_copy = copy.deepcopy(the_reservation)
         object_copy.next_month_to_show = datetime.date(day=int(the_next_month.split(
             "/")[0]), month=int(the_next_month.split("/")[1]), year=int(the_next_month.split("/")[2]))
@@ -364,7 +364,7 @@ class TgButtonInterface():
         gallery_object_back_action = copy.deepcopy(the_gallery)
         gallery_object_next_action = copy.deepcopy(the_gallery)
         gallery_object_delete_action = copy.deepcopy(the_gallery)
-        gallery_object_delete_action.user_want_to_delete()
+        gallery_object_delete_action.user_want_to_delete_change()
         keyboard = []
         gallery_object_back_action.back()
         gallery_object_next_action.next()
@@ -403,7 +403,7 @@ class TgButtonInterface():
 
         gallery_object_abort_action = copy.deepcopy(the_gallery)
         gallery_object_confirm_action = copy.deepcopy(the_gallery)
-        gallery_object_abort_action.user_want_to_delete()
+        gallery_object_abort_action.user_want_to_delete_change()
         gallery_object_confirm_action.is_ready_to_delete_change()
 
         keyboard = [
@@ -443,7 +443,9 @@ class TgButtonInterface():
         return text_reply, reply_markup
 
     @classmethod
-    def delete_profile_action(cls):
+    def delete_profile_action(
+        cls
+    ):
         text_reply = "Sei sicuro di cancellare tutti i dati che detiene il bot, ovvero i dati di sistema, i contatti e le prenotazioni?"
         keyboard = [
             InlineKeyboardButton("annulla",
@@ -457,7 +459,9 @@ class TgButtonInterface():
         return text_reply, reply_markup
 
     @classmethod
-    def change_contacts_action(cls):
+    def change_contacts_action(
+        cls
+    ) -> tuple[str, InlineKeyboardMarkup]:
         text_reply = "Puoi modificare e/o inserire i seguenti campi:"
         keyboard = [
             InlineKeyboardButton("nome",
@@ -475,3 +479,4 @@ class TgButtonInterface():
         reply_markup = InlineKeyboardMarkup(build_menu(keyboard, n_cols=1))
 
         return text_reply, reply_markup
+

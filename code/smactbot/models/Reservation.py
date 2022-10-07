@@ -8,14 +8,16 @@ import datetime as dt
 from smactbot.db_functions import insert_reservation, delete_reservation
 
 # the class Reservation
+
+
 class Reservation():
     """This class contains all the informations about a reservation. 
     This reservation is meant to be uploaded on the db. The methods
     inside allows an easier upload and management of the reservation.
     """
-    
+
     def __init__(self) -> None:
-        self.reservation_id = None 
+        self.reservation_id = None
         """Str: date_id \nFor example: 2022-12-22_1"""
         self.telegram_id = None
         """Int: the telegram user id"""
@@ -41,7 +43,6 @@ class Reservation():
         is set to False, insted when it press the button the reservation
         is ready and the upload will initialize"""
 
-
     def gallery_item_constructor(self, tupla: dict) -> object:
         """From a tuple of the db, it creates a reservation with the 
         info inside the tuple
@@ -64,12 +65,10 @@ class Reservation():
         self.is_reservation_ready = True
         return self
 
-
     def __repr__(self):
-        return f"\nReserved seats: {self.reserved_seats} \n\
-                Reserved date: {self.reservation_date} \n\
-                Reserved time period: {self.time_period}"
-
+        return f"\nReserved seats: {self.reserved_seats}\n"\
+            f"Reserved date: {self.reservation_date}\n"\
+            f"Reserved time period: {self.time_period}"
 
     def upload_reservation(self, telegram_id: str) -> bool:
         """It uploads the reservation on the db, passing
@@ -90,7 +89,6 @@ class Reservation():
                                   reservation_date=self.reservation_date,
                                   time_period=self.time_period,
                                   office_name=self.office_name)
-
 
     def confirm_reservation(self, telegram_id: str) -> bool:
         """It checks if the fields are filled, than it uploads
@@ -116,7 +114,7 @@ class Reservation():
 
     def show_to_gallery(self) -> str:
         """It gives the info about the reservation for the Gallery
-        
+
         Returns:
             str: ready to print, with fields:
             - Reservation

@@ -72,7 +72,7 @@ class Gallery():
         """
         if self.the_class().gallery_item_constructor(self.the_query[self.pos]).delete_reservation():
             self.the_query.pop(self.pos)
-            self.user_want_to_delete()
+            self.user_want_to_delete_change()
             self.is_ready_to_delete_change()
             self.size-=1
             if self.pos!=0:

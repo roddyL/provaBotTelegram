@@ -1,23 +1,24 @@
-# handlers.py
+# !/code/smactbot/handlers.py
+# Authors:
+#     Alberto
+#     Loris
+"""This module contains all the handlers of the telegram bot"""
 
 from telegram import Update
 from telegram.ext import CallbackContext, ConversationHandler
 from smactbot.TgButtonInterface import TgButtonInterface
 from smactbot.models.Reservation import Reservation
 from smactbot.models.ShowInformation import ShowInformation
-
 from smactbot.vars import *
 from smactbot.utils.liveDemo_geolocation import nearest_production
-
 from smactbot.log import logger
 from smactbot.db_functions import *
-
 from smactbot.interfaces import *
-from smactbot.decorators import session_check
+from smactbot.decorators import session_check, get_log
 
-# functions handlers
+# the handlers
 
-
+@get_log
 async def start(
     update: Update,
     context: CallbackContext
@@ -25,19 +26,26 @@ async def start(
 
     username = update.message.from_user.username
     telegram_id = update.message.from_user.id
-    context.user_data["to_delete"] = list()
-    logger.info("Utente \'%s\' con id \'%s\' ha avviato la conversazione %s.",
-                update.message.from_user.username, update.message.from_user.id, update.message.chat_id)
+    chat_id = update.message.chat_id
+    
+    if "to_delete" not in context.user_data.keys():
+        context.user_data["to_delete"] = list()
+    else:
+        for id in context.user_data["to_delete"]:
+            await context.bot.delete_message(chat_id=chat_id, message_id=context.user_data["to_delete"].pop())
 
     insert_first_start(telegram_id=telegram_id, username=username)
 
-    additionalText = "Ciao, vi servirò fino alla fine \nPremi il tasto login per utilizzare il bot con tutte le sue funzionalità!"
-    menu_main_interface = menu_interface_main(autorizzazioni=check_authorization(
-        telegram_id=telegram_id), additionalText=additionalText)
-    await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
+    starting_text = "Ciao, vi servirò fino alla fine \nPremi il tasto login per utilizzare il bot con tutte le sue funzionalità!"
+    new_message_id = await context.bot.send_message(chat_id=chat_id,
+                                    text=starting_text)
+    interface = TgButtonInterface.main_menu(role_authorization=check_authorization(
+        telegram_id=telegram_id))
+    await update.message.reply_text(interface[0], reply_markup=interface[1])
+    context.user_data["to_delete"].append(new_message_id.id)
     return BUTTON
 
-
+@get_log
 async def fallback(
     update: Update,
     context: CallbackContext
@@ -46,11 +54,9 @@ async def fallback(
     username = update.message.from_user.username
     telegram_id = update.message.from_user.id
     chat_id = update.message.chat_id
-    comando = update.message.text
+    command = update.message.text
 
-    if comando == "/back":
-        logger.info(
-            f"L'utente {username} con id {telegram_id} ha digitato il comando /back")
+    if command == "/back":
 
         context.user_data["to_delete"].append(update.message.id)
 
@@ -61,11 +67,11 @@ async def fallback(
         if isinstance(il_back, int):
             return il_back
         else:
-            interfaccia_back = back_interface(il_back)
-            await context.bot.send_message(chat_id=chat_id, text=interfaccia_back[0], reply_markup=interfaccia_back[1])
+            interface = back_interface(il_back)
+            await context.bot.send_message(chat_id=chat_id, text=interface[0], reply_markup=interface[1])
             return BUTTON
 
-
+@get_log
 async def login_check(
     update: Update,
     context: CallbackContext
@@ -87,8 +93,6 @@ async def login_check(
     role_passwords = get_role_password()
     if typed_password in role_passwords.keys():
         if not check_whitelist(telegram_id=telegram_id):
-            logger.info(
-                "Log in dell'utente \'%s\' con id \'%s\' riuscito. Registrazione in corso.", username, telegram_id)
             # fai partire la richiesta dei contatti
             await context.bot.send_message(chat_id=chat_id,
                                            text="Password corretta!\n Ora inserisci il tuo nome:")
@@ -101,9 +105,7 @@ async def login_check(
             update_session(telegram_id=telegram_id)
             change_role(telegram_id=telegram_id,
                         role_name=role_passwords[typed_password])
-            logger.info(
-                "Log in dell'utente \'%s\' con id \'%s\' riuscito. Update della sessione.", username, telegram_id)
-        messaggio = await context.bot.send_message(chat_id=chat_id,
+            messaggio = await context.bot.send_message(chat_id=chat_id,
                                                    text="Password corretta!\n ora puoi accedere alle funzioni del bot!")
         context.user_data["to_delete"].append(messaggio.id)
         menu_main_interface = menu_interface_main(
@@ -111,8 +113,6 @@ async def login_check(
         await update.message.reply_text(menu_main_interface[0], reply_markup=menu_main_interface[1])
         return BUTTON
     else:
-        logger.info(
-            "Log in dell'utente \'%s\' con id \'%s\' non riuscito. Password usata: %s", username, telegram_id, typed_password)
         messaggio = await context.bot.send_message(chat_id=chat_id,
                                                    text="Password SBAGLIATA!\n Riprova a inserire la password.\nPremi /back per tornare indietro")
         context.user_data["to_delete"].append(messaggio.id)
@@ -120,6 +120,7 @@ async def login_check(
 
 
 @session_check
+@get_log
 async def button(
     update: Update,
     context: CallbackContext
@@ -129,9 +130,7 @@ async def button(
     telegram_id = update.callback_query.from_user.id
     query = update.callback_query
     chat_id = query.message.chat_id
-    logger.info(
-        f"conferma callback_query dell'utente {username} con id {telegram_id}: query.data:{query.data}")
-
+    
     while len(context.user_data["to_delete"]) > 0:
         await context.bot.delete_message(chat_id=chat_id,
                                          message_id=context.user_data["to_delete"].pop())
@@ -148,13 +147,13 @@ async def button(
         elif this_prenotazione.next_month_to_show:
             this_prenotazione.showed_month = this_prenotazione.next_month_to_show
             this_prenotazione.next_month_to_show = None
-            the_interface = TgButtonInterface.reservation_date_selection(firstDayMonth=this_prenotazione.showed_month,
+            the_interface = TgButtonInterface.reservation_date_selection(first_day_of_the_month=this_prenotazione.showed_month,
                                              the_reservation=this_prenotazione,
                                              full_office_days=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
                                                                                  selected_month=this_prenotazione.showed_month,
                                                                                  office_name=this_prenotazione.office_name))
         elif not this_prenotazione.reservation_date:
-            the_interface = TgButtonInterface.reservation_date_selection(firstDayMonth=this_prenotazione.showed_month,
+            the_interface = TgButtonInterface.reservation_date_selection(first_day_of_the_month=this_prenotazione.showed_month,
                                              the_reservation=this_prenotazione,
                                              full_office_days=check_busy_days(reserved_seats=this_prenotazione.reserved_seats,
                                                                                  selected_month=this_prenotazione.showed_month,
@@ -190,8 +189,6 @@ async def button(
     elif isinstance(query.data, str):
         if query.data == "login":
             context.user_data['back'] = "menu_principale"
-            logger.info(
-                "Utente \'%s\' con id \'%s\' sta cercando di effettuare il log in.", username, telegram_id)
             messaggio = await query.edit_message_text(
                 text="inserisci la password d'accesso: \n\
                     digita /back per tornare alla schermata precedente"
@@ -269,8 +266,6 @@ async def button(
 
             # inserire store di tutta la chat
 
-            logger.info(
-                "L'utente \'%s\' con id \'%s\' ha effettuato il logout.", username, telegram_id)
             additionalText = "Ciao, hai effettuato il logout!"
             the_interface = TgButtonInterface.main_menu(role_authorization=check_authorization(
                 telegram_id=telegram_id), additional_text=additionalText)
@@ -288,6 +283,7 @@ async def button(
 
 
 @session_check
+@get_log
 async def send_location(
     update: Update,
     context: CallbackContext
@@ -301,9 +297,6 @@ async def send_location(
     while len(context.user_data["to_delete"]) > 0:
         await context.bot.delete_message(chat_id=chat_id, message_id=context.user_data["to_delete"].pop())
 
-    logger.info(
-        f"Posizione dell'utente {username} con id {telegram_id}: longitudine: {posizione.latitude} latitudine:{posizione.longitude}")
-
     nearest_branch = nearest_production(posizione)
 
     location_interface = interface_nearest_liveDemo(
@@ -314,7 +307,7 @@ async def send_location(
 
     return BUTTON
 
-
+@get_log
 async def send_contact_name(
     update: Update,
     context: CallbackContext
@@ -330,7 +323,7 @@ async def send_contact_name(
         next_return=CONTACT_SURNAME
     )
 
-
+@get_log
 async def send_contact_surname(
     update: Update,
     context: CallbackContext
@@ -346,7 +339,7 @@ async def send_contact_surname(
         next_return=CONTACT_NUMBER
     )
 
-
+@get_log
 async def send_contact_number(
     update: Update,
     context: CallbackContext
@@ -362,7 +355,7 @@ async def send_contact_number(
         next_return=CONTACT_MAIL
     )
 
-
+@get_log
 async def send_contact_mail(
     update: Update,
     context: CallbackContext
@@ -378,7 +371,6 @@ async def send_contact_mail(
         next_return=BUTTON
     )
 
-
 async def send_contact_generic(
     update: Update,
     context: CallbackContext,
@@ -391,7 +383,7 @@ async def send_contact_generic(
 
     telegram_id = update.message.from_user.id
     chat_id = update.message.chat_id
-    message_id = update.message.id
+    old_message_id = update.message.id
     message = update.message.text
 
     while len(context.user_data["to_delete"]) > 0:
@@ -399,30 +391,29 @@ async def send_contact_generic(
 
     if insert_contacts(telegram_id=telegram_id, contact_type=contact_type, the_single_contact=message):
         if context.user_data['back'] != "menu_profilo":
-            # schermata subito dopo il login
 
-            il_messaggio = await context.bot.send_message(chat_id=chat_id,
+            new_message_id = await context.bot.send_message(chat_id=chat_id,
                                                           text=f"Hai registrato correttamente {msg_currentAction}, ora passa {msg_nextAction}:")
             if next_return == BUTTON:
-                interfaccia = TgButtonInterface.main_menu(
+                interface = TgButtonInterface.main_menu(
                     role_authorization=check_authorization(telegram_id=telegram_id))
                 await context.bot.send_message(chat_id=chat_id,
-                                               text=interfaccia[0],
-                                               reply_markup=interfaccia[1])
+                                               text=interface[0],
+                                               reply_markup=interface[1])
             the_return = next_return
         else:
-            il_messaggio = await context.bot.send_message(chat_id=chat_id,
+            new_message_id = await context.bot.send_message(chat_id=chat_id,
                                                           text=f"Hai registrato correttamente {msg_currentAction}!")
-            interfaccia = TgButtonInterface.change_contacts_action()
-            await context.bot.send_message(chat_id=chat_id, text=interfaccia[0],
-                                           reply_markup=interfaccia[1])
+            interface = TgButtonInterface.change_contacts_action()
+            await context.bot.send_message(chat_id=chat_id, text=interface[0],
+                                           reply_markup=interface[1])
             the_return = BUTTON
     else:
-        il_messaggio = await context.bot.send_message(chat_id=chat_id,
+        new_message_id = await context.bot.send_message(chat_id=chat_id,
                                                       text=f"Non hai inserito correttamente {msg_currentAction}, riprova")
 
         the_return = current_return
 
-    context.user_data["to_delete"].append(il_messaggio.id)
-    context.user_data["to_delete"].append(message_id)
+    context.user_data["to_delete"].append(new_message_id.id)
+    context.user_data["to_delete"].append(old_message_id)
     return the_return

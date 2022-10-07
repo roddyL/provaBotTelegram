@@ -36,8 +36,8 @@ def get_holidays(year: int, province: str) -> List[datetime.date]:
 
 
 def next_month(
-    mese: int,
-    anno: int
+    month: int,
+    year: int
 ) -> str:
     """next_month()
 
@@ -48,17 +48,17 @@ def next_month(
     Returns:
         str: prossimo mese formato 00/00/0000
     """
-    if mese == 12:
-        prossimoMese = f"01/01/{anno+1}"
+    if month == 12:
+        next_month = f"01/01/{year+1}"
     else:
-        prossimoMese = f"01/{mese+1}/{anno}"
+        next_month = f"01/{month+1}/{year}"
 
-    return prossimoMese
+    return next_month
 
 
 def previous_month(
-    mese: int,
-    anno: int
+    month: int,
+    year: int
 ) -> str:
     """previous_month()
 
@@ -69,12 +69,12 @@ def previous_month(
     Returns:
         str: mese precedente formato 00/00/0000
     """
-    if mese == 1:
-        mesePrecedente = f"01/12/{anno-1}"
+    if month == 1:
+        previous_month = f"01/12/{year-1}"
     else:
-        mesePrecedente = f"01/{mese-1}/{anno}"
+        previous_month = f"01/{month-1}/{year}"
 
-    return mesePrecedente
+    return previous_month
 
 
 def strike(
@@ -128,10 +128,10 @@ def bold(
     return result
 
 
-def dayInfo(
+def day_info(
     day: datetime.date,
-    giorni_uffici_pieni: List[datetime.date],
-    holidays: List[datetime.date]=[]    
+    full_office_days: List[datetime.date],
+    the_holidays: List[datetime.date]=[]    
 ) -> dict:
     """dayInfo()
 
@@ -148,22 +148,22 @@ def dayInfo(
         }
     """
 
-    holidays = list(set(get_holidays(day.year, "PD")) | set(holidays))
+    the_holidays = list(set(get_holidays(day.year, "PD")) | set(the_holidays))
     giorni = []
     for i in calendar.monthcalendar(day.year, day.month):
         for j in i:
             if j == 0:
                 giorni.append(" ")
-            elif datetime.date(day.year, day.month, j) in holidays+giorni_uffici_pieni or i[-1] == j or i[-2] == j or (day.year == datetime.date.today().year and day.month == datetime.date.today().month and j <= datetime.date.today().day):
+            elif datetime.date(day.year, day.month, j) in the_holidays+full_office_days or i[-1] == j or i[-2] == j or (day.year == datetime.date.today().year and day.month == datetime.date.today().month and j <= datetime.date.today().day):
                 giorni.append(f"{j}❌")
             else:
                 giorni.append(f"{j}🟩")
 
     return {
-        "giorno": day.day,
-        "mese": month_enToIt[calendar.month_name[day.month]],
-        "anno": day.year,
-        "lista_giorni": giorni
+        "day": day.day,
+        "month": month_enToIt[calendar.month_name[day.month]],
+        "year": day.year,
+        "days_list": giorni
     }
 
 

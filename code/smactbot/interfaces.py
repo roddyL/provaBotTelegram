@@ -11,7 +11,7 @@ from smactbot.models.Gallery import Gallery
 from smactbot.models.Reservation import Reservation
 from smactbot.utils.utility import (
     build_menu,
-    dayInfo,
+    day_info,
     next_month,
     previous_month
 )
@@ -176,8 +176,8 @@ def calendar_interface(
     giorni_uffici_pieni: List[datetime.date],
     firstDayMonth: datetime.date = None
 ) -> InlineKeyboardMarkup:
-    theDay = dayInfo(day=firstDayMonth,
-                     giorni_uffici_pieni=giorni_uffici_pieni)
+    theDay = day_info(day=firstDayMonth,
+                     full_office_days=giorni_uffici_pieni)
     giorno_datetime = firstDayMonth
     mese = theDay["mese"]
     anno = theDay["anno"]
