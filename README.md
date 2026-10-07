@@ -7,10 +7,8 @@ controllo della disponibilità e calendario.
 - Login/registrazione degli utenti
 - Prenotazione di sale e posti con controllo disponibilità
 - Calendario delle prenotazioni
-- [altre funzioni che hai fatto]
 
 ## Tecnologie
-Python, [libreria Telegram usata], [database usato]
 
 ## Come avviarlo
 1. Clona il repository
